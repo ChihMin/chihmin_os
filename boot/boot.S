@@ -1,6 +1,6 @@
 #include <inc/mmu.h>
 
-.set PROT_MODE_CSEG, 0x8         # kernel code segment selector
+.equ PROT_MODE_CSEG, 0x8         # kernel code segment selector
 .set PROT_MODE_DSEG, 0x10        # kernel data segment selector
 .set CR0_PE_ON,      0x1         # protected mode enable flag
 
@@ -47,7 +47,7 @@ loop:
 	jmp loop
 
 # Bootstrap GDT
-	.p2align 2                                # force 4 byte alignment
+	.p2align 3                              # force 4 byte alignment
 gdt:
 # TODO: Fillup GDT entry with SEG macro
 #       One for kernel code segment
@@ -60,13 +60,14 @@ gdt:
 #       easy-to-use macro when defining segmentation type.
 
 	SEG_NULL    # NULL segment
-	SEG()     # Kernel code segment
-	SEG()     # Kernel data segment
+	SEG(0xA, 0x0000, 0xFFFFF)     # Kernel code segment
+	SEG(0x2, 0x0000, 0xFFFFF)     # Kernel data segment
 
 # TODO: Please fillup the GDT register for gdt in order to used
 #       with "lgdt" instruction.
 # Note: You can reference lab3_reference page 13 for detail meaning
 #       of each bit of GDT register.
+end_gdt:
 gdtdesc: 
-	.word	# gdt limit
-	.word	# gdt base
+	.word   0x24 	# gdt limit
+	.long   gdt   	# gdt base
