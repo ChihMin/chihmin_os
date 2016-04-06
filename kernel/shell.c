@@ -14,11 +14,12 @@ static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
 	{ "print_tick", "Display system tick", print_tick },
-    { "chg_color", "Change Screen Color", change_color }
+    { "chgcolor", "Change Screen Color", change_color }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
 int change_color(int argc, char **argv) {
+    if (argc < 2) return 0;
     int len = strlen(argv[1]);
     char sum = 0;
     int i;
@@ -26,6 +27,7 @@ int change_color(int argc, char **argv) {
         sum = sum * 10 + argv[1][i] - '0';
     }
     settextcolor(sum, 0);
+    return 0;
 }
 
 int mon_help(int argc, char **argv)
@@ -37,9 +39,20 @@ int mon_help(int argc, char **argv)
 	return 0;
 }
 
+extern uint32_t DATA_START; 
+extern uint32_t DATA_END;
+extern uint32_t CODE_START;
+extern uint32_t etext;
+extern uint32_t TOTAL_START;
+extern uint32_t TOTAL_END;
+
 int mon_kerninfo(int argc, char **argv)
 {
-	/* TODO: Print the kernel code and data section size 
+    cprintf("Kernel code baseaddress 0x%x size = %d\n", &CODE_START, &etext - &CODE_START);
+    cprintf("Kernel data baseaddress 0x%x size = %d\n", &DATA_START, &DATA_END - &DATA_START);
+	cprintf("Kernel executable memory footprint: %d\n", &TOTAL_END - &TOTAL_START);
+
+    /* TODO: Print the kernel code and data section size 
    * NOTE: You can count only linker script (kernel/kern.ld) to
    *       provide you with those information.
    *       Use PROVIDE inside linker script and calculate the
