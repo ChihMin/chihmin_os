@@ -13,10 +13,20 @@ struct Command {
 static struct Command commands[] = {
 	{ "help", "Display this list of commands", mon_help },
 	{ "kerninfo", "Display information about the kernel", mon_kerninfo },
-	{ "print_tick", "Display system tick", print_tick }
+	{ "print_tick", "Display system tick", print_tick },
+    { "chg_color", "Change Screen Color", change_color }
 };
 #define NCOMMANDS (sizeof(commands)/sizeof(commands[0]))
 
+int change_color(int argc, char **argv) {
+    int len = strlen(argv[1]);
+    char sum = 0;
+    int i;
+    for(i = 0; i < len; ++i) {
+        sum = sum * 10 + argv[1][i] - '0';
+    }
+    settextcolor(sum, 0);
+}
 
 int mon_help(int argc, char **argv)
 {
