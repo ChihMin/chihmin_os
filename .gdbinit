@@ -1,3 +1,3 @@
 file kernel/system
 target remote localhost:1234
-b *0x7c00
+b kernel/trap_entry.S:kbd_isr_func

@@ -17,6 +17,7 @@
 
 .text
 
+TRAPHANDLER_NOEC(kbd_isr_func, 33)   # keyboard
 /* TODO: Interface declaration for ISRs
  * Note: Use TRAPHANDLER_NOEC macro define other isr enrty
  *       The Trap number are declared in inc/trap.h which might come in handy
@@ -36,10 +37,20 @@ _alltraps:
    *       You may want to leverage the "pusha" instructions to reduce your work of
    *       pushing all the general purpose registers into the stack.
 	 */
-
-	pushl %esp # Pass a pointer which points to the Trapframe as an argument to default_trap_handler()
+    # popl %eax
+    push    %es
+    push    %ds
+    pushal
+    pushl %esp # Pass a pointer which points to the Trapframe as an argument to default_trap_handler()
 	call default_trap_handler
+    popl %eax   # pop stack
+    popal        # pop general registers
+    pop     %ds # pop data segment register
+    pop     %es # pop extra segment register
 
-	add $8, %esp # Cleans up the pushed error code and pushed ISR number
+    popl %eax   # pop IRQ number 
+    popl %eax   # pop error code
+    # pop %ebx
+
+	# add $8, %esp # Cleans up the pushed error code and pushed ISR number
 	iret # pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!
-

@@ -7,7 +7,6 @@
  * additional information in the latter case.
  */
 static struct Trapframe *last_tf;
-
 /* TODO: You should declare an interrupt descriptor table.
  *       In x86, there are at most 256 it.
  *
@@ -16,6 +15,11 @@ static struct Trapframe *last_tf;
  *       function addresses can't be represented in relocation records.
  */
 
+struct Gatedesc idt[256];
+struct Pseudodesc idt_pd = {
+    256 * 8,    // total size 
+    (uint32_t)idt
+};
 
 /* For debugging */
 static const char *trapname(int trapno)
@@ -100,6 +104,7 @@ print_regs(struct PushRegs *regs)
 	cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+
 static void
 trap_dispatch(struct Trapframe *tf)
 {
@@ -117,9 +122,13 @@ trap_dispatch(struct Trapframe *tf)
    *       We prepared the keyboard handler and timer handler for you
    *       already. Please reference in kernel/kbd.c and kernel/timer.c
    */
-
 	// Unexpected trap: The user process or the kernel has a bug.
-	print_trapframe(tf);
+    switch (tf->tf_trapno) {
+    case 33:
+        kbd_intr();
+        break;
+    }
+    //print_trapframe(tf);
 }
 
 /* 
@@ -130,11 +139,12 @@ void default_trap_handler(struct Trapframe *tf)
 	// Record that tf is the last real trapframe so
 	// print_trapframe can print some additional information.
 	last_tf = tf;
-
+    
 	// Dispatch based on what type of trap occurred
 	trap_dispatch(tf);
 }
 
+extern void kbd_isr_func();
 
 void trap_init()
 {
@@ -159,9 +169,13 @@ void trap_init()
    *       There is a data structure called Pseudodesc in mmu.h which might
    *       come in handy for you when filling up the argument of "lidt"
    */
-
-	/* Keyboard interrupt setup */
-	/* Timer Trap setup */
-  /* Load IDT */
-
+    uint32_t  address = (uint32_t)kbd_isr_func;
+    int i;
+    SETGATE(idt[33], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
+    //SETGATE(interrupt_table[9], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
+    //SETGATE(interrupt_table[10], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
+    //SETGATE(interrupt_table[11], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
+  /* Timer Trap setup */
+  /* Load IDT */ 
+    lidt(&idt_pd); 
 }
