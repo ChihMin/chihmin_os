@@ -17,6 +17,7 @@
 
 .text
 
+TRAPHANDLER_NOEC(timer_isr_func, 32) # timer 
 TRAPHANDLER_NOEC(kbd_isr_func, 33)   # keyboard
 /* TODO: Interface declaration for ISRs
  * Note: Use TRAPHANDLER_NOEC macro define other isr enrty

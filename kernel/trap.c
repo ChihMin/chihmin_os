@@ -124,6 +124,10 @@ trap_dispatch(struct Trapframe *tf)
    */
 	// Unexpected trap: The user process or the kernel has a bug.
     switch (tf->tf_trapno) {
+    case 32:
+        timer_handler(); 
+        break;
+    
     case 33:
         kbd_intr();
         break;
@@ -145,6 +149,7 @@ void default_trap_handler(struct Trapframe *tf)
 }
 
 extern void kbd_isr_func();
+extern void timer_isr_func();
 
 void trap_init()
 {
@@ -169,9 +174,8 @@ void trap_init()
    *       There is a data structure called Pseudodesc in mmu.h which might
    *       come in handy for you when filling up the argument of "lidt"
    */
-    uint32_t  address = (uint32_t)kbd_isr_func;
-    int i;
-    SETGATE(idt[33], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
+    SETGATE(idt[32], 0, 0x0008, (uint32_t)timer_isr_func, 0);/* Keyboard interrupt setup */
+    SETGATE(idt[33], 0, 0x0008, (uint32_t)kbd_isr_func, 0);/* Keyboard interrupt setup */
     //SETGATE(interrupt_table[9], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
     //SETGATE(interrupt_table[10], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
     //SETGATE(interrupt_table[11], 0, 0x0008, address, 0);/* Keyboard interrupt setup */

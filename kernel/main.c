@@ -15,7 +15,7 @@ void kernel_main(void)
   /* TODO: You should uncomment them
    */
 	kbd_init();
-	// timer_init();
+	timer_init();
 	trap_init();
 
 	/* Enable interrupt */
