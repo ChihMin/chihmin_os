@@ -49,9 +49,9 @@ _alltraps:
     pop     %ds # pop data segment register
     pop     %es # pop extra segment register
 
-    popl %eax   # pop IRQ number 
-    popl %eax   # pop error code
+    # popl %eax   # pop IRQ number 
+    # popl %eax   # pop error code
     # pop %ebx
 
-	# add $8, %esp # Cleans up the pushed error code and pushed ISR number
+	add $8, %esp # Cleans up the pushed error code and pushed ISR number
 	iret # pops 5 things at once: CS, EIP, EFLAGS, SS, and ESP!

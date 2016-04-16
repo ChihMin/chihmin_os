@@ -7,7 +7,7 @@
 .globl start
 start:
 	.code16                     # Assemble for 16-bit mode
-
+    # 0b0000001000
 	# Set up the important data segment registers (DS, ES, SS).
 	xorw    %ax,%ax             # Segment number zero
 	movw    %ax,%ds             # -> Data Segment
