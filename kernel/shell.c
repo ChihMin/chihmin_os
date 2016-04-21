@@ -39,6 +39,7 @@ int mon_help(int argc, char **argv)
 	return 0;
 }
 
+extern uint32_t MISSION_START;
 extern uint32_t DATA_START; 
 extern uint32_t DATA_END;
 extern uint32_t CODE_START;
@@ -48,6 +49,7 @@ extern uint32_t TOTAL_END;
 
 int mon_kerninfo(int argc, char **argv)
 {
+    cprintf("Kernel from 0x%x to 0x%x\n", &MISSION_START, &TOTAL_START);
     cprintf("Kernel code baseaddress 0x%x size = %d\n", &CODE_START, &etext - &CODE_START);
     cprintf("Kernel data baseaddress 0x%x size = %d\n", &DATA_START, &DATA_END - &DATA_START);
 	cprintf("Kernel executable memory footprint: %d\n", &TOTAL_END - &TOTAL_START);

@@ -1,3 +1,7 @@
 file kernel/system
 target remote localhost:1234
-b kernel/trap_entry.S:kbd_isr_func
+b kernel/mem.c:mem_init
+
+def link
+    target remote localhost:1234
+end

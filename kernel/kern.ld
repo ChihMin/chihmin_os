@@ -8,7 +8,8 @@ kernel_load_addr = 0xF0100000;
 
 SECTIONS
 {
-	. = kernel_load_addr;
+	PROVIDE(MISSION_START = .);
+    . = kernel_load_addr;
     PROVIDE(TOTAL_START = .);
 
 	/* AT(...) gives the load address of this section, which tells
@@ -18,6 +19,7 @@ SECTIONS
 		*(.text .stub .text.* .gnu.linkonce.t.*)
 	}
 	PROVIDE(etext = .);	/* Define the 'etext' symbol to this value */
+    PROVIDE(CODE_END = .);
 
 	.rodata : {
 		*(.rodata .rodata.* .gnu.linkonce.r.*)

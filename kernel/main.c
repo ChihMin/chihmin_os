@@ -18,7 +18,7 @@ void kernel_main(void)
 	 kbd_init();
 	 timer_init();
 	 trap_init();
-     //mem_init();
+     mem_init();
 
 	/* Enable interrupt */
 	__asm __volatile("sti");
