@@ -267,15 +267,20 @@ page_init(void)
     extern size_t CODE_START, TOTAL_END;
     size_t ext_page = EXTPHYSMEM / PGSIZE;
     size_t i;
+    size_t current_ptr = (size_t)boot_alloc(0);
+    size_t total_page_num = 0;
+    cprintf("BEFORE : ptr = 0x%x, TOTAL_END = 0x%x\n", ROUNDUP(current_ptr, PGSIZE), ROUNDUP(&TOTAL_END, PGSIZE)); 
+    cprintf("AFTER  : ptr = 0x%x, TOTAL_END = 0x%x\n", ROUNDUP(current_ptr, PGSIZE) + PGSIZE * 10 * 4, ROUNDUP(&TOTAL_END, PGSIZE) + PGSIZE * 10); 
     for (i = 1; i < npages_basemem - 1; i++) {
         pages[i].pp_ref = 0;
         pages[i].pp_link = page_free_list;
         page_free_list = &pages[i];
+        total_page_num++;
     }
 
     for (i = ext_page + 1; i < npages; i++) {
         size_t phyaddr = i * PGSIZE + KERNBASE;
-        if (phyaddr >= ROUNDDOWN(&CODE_START, PGSIZE) - PGSIZE && phyaddr <= ROUNDUP(&TOTAL_END, PGSIZE)+ 10 * PGSIZE)
+        if (phyaddr >= ROUNDDOWN(&CODE_START, PGSIZE) - PGSIZE && phyaddr <= ((size_t)ROUNDUP(current_ptr+PGSIZE*10*4, PGSIZE)))
         {
             //cprintf("PAGE_INIT : %d\n", i);
             continue;
@@ -283,8 +288,9 @@ page_init(void)
         pages[i].pp_ref = 0;
         pages[i].pp_link = page_free_list;
         page_free_list = &pages[i];
+        total_page_num++;
     }
-
+    cprintf("page_free_list : %p %p\n", page_free_list);
 }
 
 //
@@ -302,9 +308,18 @@ page_init(void)
 struct PageInfo *
 page_alloc(int alloc_flags)
 {
-    struct PageInfo * new_page;
-    new_page = page2kva(new_page); 
     /* TODO */
+    struct PageInfo * new_page;
+    struct PageInfo * new_k_phyaddr;
+    if (page_free_list == NULL)
+        return NULL;
+    
+    new_page = page_free_list;
+    page_free_list = page_free_list->pp_link; 
+    new_page->pp_link = NULL;
+    new_k_phyaddr = page2kva(new_page); 
+    memset(new_k_phyaddr, 0, PGSIZE);
+    return new_page;
 }
 
 //
@@ -494,7 +509,7 @@ check_page_free_list(bool only_low_memory)
 
 	// if there's a page that shouldn't be on the free list,
 	// try to make sure it eventually causes trouble.
-	for (pp = page_free_list; pp; pp = pp->pp_link) {
+    for (pp = page_free_list; pp; pp = pp->pp_link) {
         if (PDX(page2pa(pp)) < pdx_limit)
 			memset(page2kva(pp), 0x97, 128);
     }
