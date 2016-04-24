@@ -388,8 +388,9 @@ pgdir_walk(pde_t *pgdir, const void *va, int create)
     }
     else if (~pgdir[PDX(va)] & PTE_P) {  
         new_page = page_alloc(1);
-        if (new_page == NULL)
+        if (new_page == NULL) {
             return NULL;
+        }
         new_page->pp_ref++;
         new_page_addr = page2pa(new_page);
         pgdir[PDX(va)] = new_page_addr | PTE_P | PTE_W | PTE_U;
@@ -451,11 +452,13 @@ page_insert(pde_t *pgdir, struct PageInfo *pp, void *va, int perm)
     pte_t * pg_table;
     struct PageIngo * page;
     
-    page = page_lookup(pgdir, va, NULL);
-    if (pp != page) 
-        page_remove(pgdir, va);
-    else 
-        pp->pp_ref--;
+    page = page_lookup(pgdir, va, NULL); // check whether there's a page
+    if (page != NULL) {
+        if (pp != page) // if page is NOT the same as current page
+            page_remove(pgdir, va); // remove origin mapped page
+        else 
+            pp->pp_ref--;   // decrease pp_ref to prevent double reference
+    }
      
     physaddr = page2pa(pp);
     pg_table = pgdir_walk(pgdir, va, 1);
