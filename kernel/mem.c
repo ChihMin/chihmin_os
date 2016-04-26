@@ -149,7 +149,7 @@ mem_init(void)
 	// Your code goes here:
     /* TODO */
     
-    pages = (struct PageInfo*)boot_alloc(1024 * sizeof(struct PageInfo));
+    pages = (struct PageInfo*)boot_alloc(npages * sizeof(struct PageInfo));
     memset(pages, 0, npages * sizeof(struct PageInfo)); 
      
 	//////////////////////////////////////////////////////////////////////
@@ -188,6 +188,7 @@ mem_init(void)
 	//     Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
+    boot_map_region(kern_pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), (PTE_W) | (PTE_P)); 
 
 	//////////////////////////////////////////////////////////////////////
 	// Map all of physical memory at KERNBASE.
@@ -198,6 +199,8 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
+    uint32_t one = 1;
+    boot_map_region(kern_pgdir, KERNBASE, (one<<32)-KERNBASE, 0, (PTE_W) | (PTE_P));
 
 	//////////////////////////////////////////////////////////////////////
 	// Map VA range [IOPHYSMEM, EXTPHYSMEM) to PA range [IOPHYSMEM, EXTPHYSMEM)
@@ -269,8 +272,6 @@ page_init(void)
     size_t i;
     size_t current_ptr = (size_t)boot_alloc(0);
     size_t total_page_num = 0;
-    cprintf("BEFORE : ptr = 0x%x, TOTAL_END = 0x%x\n", ROUNDUP(current_ptr, PGSIZE), ROUNDUP(&TOTAL_END, PGSIZE)); 
-    cprintf("AFTER  : ptr = 0x%x, TOTAL_END = 0x%x\n", ROUNDUP(current_ptr, PGSIZE) + PGSIZE * 10 * 4, ROUNDUP(&TOTAL_END, PGSIZE) + PGSIZE * 10); 
     for (i = 1; i < npages_basemem - 1; i++) {
         pages[i].pp_ref = 0;
         pages[i].pp_link = page_free_list;
@@ -280,7 +281,7 @@ page_init(void)
 
     for (i = ext_page + 1; i < npages; i++) {
         size_t phyaddr = i * PGSIZE + KERNBASE;
-        if (phyaddr >= ROUNDDOWN(&CODE_START, PGSIZE) - PGSIZE && phyaddr <= ((size_t)ROUNDUP(current_ptr+PGSIZE*10*4, PGSIZE)))
+        if (phyaddr >= ROUNDDOWN(&CODE_START, PGSIZE) - PGSIZE && phyaddr <= ((size_t)ROUNDUP(current_ptr, PGSIZE)))
         {
             //cprintf("PAGE_INIT : %d\n", i);
             continue;
@@ -417,6 +418,12 @@ static void
 boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm)
 {
     /* TODO */
+    pte_t * page_entry;
+    size_t current_size;
+    for (current_size = 0; current_size < size; current_size += PGSIZE) {
+        page_entry = pgdir_walk(pgdir, va + current_size, 1);
+        *page_entry = (pa + current_size) | perm;
+    }
 }
 
 //
@@ -694,7 +701,7 @@ check_page_alloc(void)
 
 //
 // Checks that the kernel part of virtual address space
-// has been setup roughly correctly (by mem_init()).
+// as been setup roughly correctly (by mem_init()).
 //
 // This function doesn't test every corner case,
 // but it is a pretty good sanity check.
