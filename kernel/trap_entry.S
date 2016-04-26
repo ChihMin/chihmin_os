@@ -19,6 +19,7 @@
 
 TRAPHANDLER_NOEC(timer_isr_func, 32) # timer 
 TRAPHANDLER_NOEC(kbd_isr_func, 33)   # keyboard
+TRAPHANDLER_NOEC(page_fault, 14)   # keyboard
 /* TODO: Interface declaration for ISRs
  * Note: Use TRAPHANDLER_NOEC macro define other isr enrty
  *       The Trap number are declared in inc/trap.h which might come in handy

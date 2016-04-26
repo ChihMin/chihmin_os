@@ -199,8 +199,7 @@ mem_init(void)
 	// Permissions: kernel RW, user NONE
 	// Your code goes here:
     /* TODO */
-    uint32_t one = 1;
-    boot_map_region(kern_pgdir, KERNBASE, (one<<32)-KERNBASE, 0, (PTE_W) | (PTE_P));
+    boot_map_region(kern_pgdir, KERNBASE, (1<<32)-KERNBASE, 0, (PTE_W) | (PTE_P));
 
 	//////////////////////////////////////////////////////////////////////
 	// Map VA range [IOPHYSMEM, EXTPHYSMEM) to PA range [IOPHYSMEM, EXTPHYSMEM)

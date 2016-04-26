@@ -1,6 +1,7 @@
 #include <kernel/trap.h>
 #include <inc/mmu.h>
 #include <inc/x86.h>
+#include <inc/assert.h>
 
 /* For debugging, so print_trapframe can distinguish between printing
  * a saved trapframe and printing the current trapframe and print some
@@ -104,6 +105,9 @@ print_regs(struct PushRegs *regs)
 	cprintf("  eax  0x%08x\n", regs->reg_eax);
 }
 
+void page_fault_hldr() {
+    cprintf("Page Fault\n");
+}
 
 static void
 trap_dispatch(struct Trapframe *tf)
@@ -131,6 +135,12 @@ trap_dispatch(struct Trapframe *tf)
     case 33:
         kbd_intr();
         break;
+    
+    case 14:
+        page_fault_hldr();
+        panic("page fault!\n");
+        break;
+        
     }
     //print_trapframe(tf);
 }
@@ -150,6 +160,7 @@ void default_trap_handler(struct Trapframe *tf)
 
 extern void kbd_isr_func();
 extern void timer_isr_func();
+extern void page_fault();
 
 void trap_init()
 {
@@ -176,6 +187,7 @@ void trap_init()
    */
     SETGATE(idt[32], 0, 0x0008, (uint32_t)timer_isr_func, 0);/* Keyboard interrupt setup */
     SETGATE(idt[33], 0, 0x0008, (uint32_t)kbd_isr_func, 0);/* Keyboard interrupt setup */
+    SETGATE(idt[14], 1, 0x0008, (uint32_t)page_fault, 0);
     //SETGATE(interrupt_table[9], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
     //SETGATE(interrupt_table[10], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
     //SETGATE(interrupt_table[11], 0, 0x0008, address, 0);/* Keyboard interrupt setup */
