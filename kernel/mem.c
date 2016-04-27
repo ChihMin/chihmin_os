@@ -271,16 +271,14 @@ page_init(void)
     size_t i;
     size_t current_ptr = (size_t)boot_alloc(0);
     size_t total_page_num = 0;
-    // for (i = 1; i < npages_basemem; i++) {
-    for (i = npages_basemem - 1; i > 0; i--) {
+    for (i = 1; i < npages_basemem; i++) {
         pages[i].pp_ref = 0;
         pages[i].pp_link = page_free_list;
         page_free_list = &pages[i];
         total_page_num++;
     }
 
-    //for (i = ext_page; i < npages; i++) {
-    for (i = npages - 1; i >= ext_page; i--) {
+    for (i = ext_page; i < npages; i++) {
         size_t phyaddr = i * PGSIZE + KERNBASE;
         if (phyaddr >= ROUNDDOWN(&CODE_START, PGSIZE) && phyaddr <= ((size_t)ROUNDUP(current_ptr, PGSIZE)))
         {
