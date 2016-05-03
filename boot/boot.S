@@ -32,42 +32,27 @@ start:
 
 .code32                     # Assemble for 32-bit mode
 protcseg:
-	# Set up the protected-mode data segment registers
-	movw    $PROT_MODE_DSEG, %ax    # Our data segment selector
-	movw    %ax, %ds                # -> DS: Data Segment
-	movw    %ax, %es                # -> ES: Extra Segment
-	movw    %ax, %fs                # -> FS
-	movw    %ax, %gs                # -> GS
-	movw    %ax, %ss                # -> SS: Stack Segment
+# Set up the protected-mode data segment registers
+movw    $PROT_MODE_DSEG, %ax    # Our data segment selector
+movw    %ax, %ds                # -> DS: Data Segment
+movw    %ax, %es                # -> ES: Extra Segment
+movw    %ax, %fs                # -> FS
+movw    %ax, %gs                # -> GS
+movw    %ax, %ss                # -> SS: Stack Segment
 
-	# Set up the stack pointer and call into C.
-	  movl    $start, %esp
-	  call bootmain
+# Set up the stack pointer and call into C.
+movl    $start, %esp
+call bootmain
 loop:
-	jmp loop
+jmp loop
 
 # Bootstrap GDT
 	.p2align 2                             # force 4 byte alignment
 gdt:
-# TODO: Fillup GDT entry with SEG macro
-#       One for kernel code segment
-#       One for kernel data segment
-#
-#       Please reference lab3_reference.pdf for the meaning of
-#       each bit inside segment descriptor.
-#
-#       You may reference mmu.h for Application Segment Type for 
-#       easy-to-use macro when defining segmentation type.
+    SEG_NULL    # NULL segment
+    SEG(STA_X|STA_R, 0x0, 0xffffffff)	# Kernel code segment
+    SEG(STA_W, 0x0, 0xffffffff) 		# Kernel data segment
 
-	SEG_NULL    # NULL segment
-	SEG(0xA, 0x0000, 0xFFFFF)     # Kernel code segment
-	SEG(0x2, 0x0000, 0xFFFFF)     # Kernel data segment
-
-# TODO: Please fillup the GDT register for gdt in order to used
-#       with "lgdt" instruction.
-# Note: You can reference lab3_reference page 13 for detail meaning
-#       of each bit of GDT register.
-end_gdt:
 gdtdesc: 
-	.word   0x24 	# gdt limit
-	.long   gdt   	# gdt base
+    .word	0x17		# sizeof(gdt) - 1
+    .word	gdt,0	# gdt base = 07xxx
