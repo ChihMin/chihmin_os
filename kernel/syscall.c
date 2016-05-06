@@ -28,8 +28,8 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 	{
 	case SYS_fork:
 		/* TODO: Lab 5
-     * You can reference kernel/task.c, kernel/task.h
-     */
+         * You can reference kernel/task.c, kernel/task.h
+         */
 		break;
 
 	case SYS_getc:
@@ -43,57 +43,63 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 
 	case SYS_getpid:
 		/* TODO: Lab 5
-     * Get current task's pid
-     */
+         * Get current task's pid
+         */
 		break;
 
 	case SYS_sleep:
 		/* TODO: Lab 5
-     * Yield this task
-     * You can reference kernel/sched.c for yielding the task
-     */
+         * Yield this task
+         * You can reference kernel/sched.c for yielding the task
+         */
 		break;
 
 	case SYS_kill:
 		/* TODO: Lab 5
-     * Kill specific task
-     * You can reference kernel/task.c, kernel/task.h
-     */
+         * Kill specific task
+         * You can reference kernel/task.c, kernel/task.h
+         */
 		break;
 
-  case SYS_get_num_free_page:
-		/* TODO: Lab 5
-     * You can reference kernel/mem.c
-     */
-    break;
+    case SYS_get_num_free_page:
+        /* TODO: Lab 5
+         * You can reference kernel/mem.c
+         */
+        retVal = sys_get_num_free_page();
+        break;
 
-  case SYS_get_num_used_page:
-		/* TODO: Lab 5
-     * You can reference kernel/mem.c
-     */
-    break;
+    case SYS_get_num_used_page:
+        /* TODO: Lab 5
+         * You can reference kernel/mem.c
+         */
+        retVal = sys_get_num_used_page();
+        break;
 
-  case SYS_get_ticks:
-		/* TODO: Lab 5
-     * You can reference kernel/timer.c
-     */
-    retVal = sys_get_ticks();
-    break;
+    case SYS_get_ticks:
+        /* TODO: Lab 5
+         * You can reference kernel/timer.c
+         */
+        retVal = sys_get_ticks();
+        break;
 
-  case SYS_settextcolor:
-		/* TODO: Lab 5
-     * You can reference kernel/screen.c
-     */
-    break;
+    case SYS_settextcolor:
+        /* TODO: Lab 5
+         * You can reference kernel/screen.c
+         */
+        sys_settextcolor(a1, a2);
+        break;
 
-  case SYS_cls:
-		/* TODO: Lab 5
-     * You can reference kernel/screen.c
-     */
-    break;
+    case SYS_cls:
+        /* TODO: Lab 5
+         * You can reference kernel/screen.c
+         */
+        break;
 
-	}
-	return retVal;
+    case SYS_test:
+        retVal = 0x12345678;
+        break;
+    }
+    return retVal;
 }
 
 static void syscall_handler(struct Trapframe *tf)
@@ -103,7 +109,17 @@ static void syscall_handler(struct Trapframe *tf)
    * Please remember to fill in the return value
    * HINT: You have to know where to put the return value
    */
-
+    //int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
+    uint32_t syscallno, a1, a2, a3, a4, a5;
+    int32_t ret_value;
+    syscallno = tf->tf_regs.reg_eax;
+    a1 = tf->tf_regs.reg_edx;
+    a2 = tf->tf_regs.reg_ecx;
+    a3 = tf->tf_regs.reg_ebx;
+    a4 = tf->tf_regs.reg_edi;
+    a5 = tf->tf_regs.reg_esi; 
+    ret_value = do_syscall(syscallno, a1, a2, a3, a4, a5);
+    tf->tf_regs.reg_eax = ret_value;
 }
 
 void syscall_init()
@@ -112,6 +128,7 @@ void syscall_init()
    * Please set gate of system call into IDT
    * You can leverage the API register_handler in kernel/trap.c
    */
-
+    extern void SYSCALL_ISR();
+    register_handler(T_SYSCALL, &syscall_handler, &SYSCALL_ISR, 1, 3);
 }
 

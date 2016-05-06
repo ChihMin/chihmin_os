@@ -18,20 +18,22 @@ void kernel_main(void)
 	extern char etext[], end[], data_start[],rdata_end[];
 	extern void task_job();
 
-	init_video();
+    init_video();
 
-	trap_init();
-	pic_init();
-	kbd_init();
-  mem_init();
+    trap_init();
+    pic_init();
+    kbd_init();
+    mem_init();
+    printk("Kernel code base start=0x%08x to = 0x%08x\n", stext, etext);
+    printk("Readonly data start=0x%08x to = 0x%08x\n", etext, rdata_end);
+    printk("Kernel data base start=0x%08x to = 0x%08x\n", data_start, end);
+    timer_init();
+    syscall_init();
 
-  printk("Kernel code base start=0x%08x to = 0x%08x\n", stext, etext);
-  printk("Readonly data start=0x%08x to = 0x%08x\n", etext, rdata_end);
-  printk("Kernel data base start=0x%08x to = 0x%08x\n", data_start, end);
-  timer_init();
-  syscall_init();
+    __asm __volatile("sti");
+    shell();
 
-  task_init();
+    task_init();
 
   /* Enable interrupt */
   __asm __volatile("sti");

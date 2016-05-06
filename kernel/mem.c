@@ -125,7 +125,7 @@ mem_init(void)
 
 	// Find out how much memory the machine has (npages & npages_basemem).
 	i386_detect_memory();
-    cprintf("npages = %d, npages_base = %d\n", npages, npages_basemem);
+    printk("npages = %d, npages_base = %d\n", npages, npages_basemem);
 
 	//////////////////////////////////////////////////////////////////////
 	// create initial page directory.
@@ -207,7 +207,12 @@ mem_init(void)
     boot_map_region(kern_pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, (PTE_W) | (PTE_P));
 
 	// Check that the initial page directory has been set up correctly.
-	check_kern_pgdir();
+    extern size_t UTEXT_start;
+    extern size_t UTEXT_end;
+    size_t offset = ROUNDUP((size_t)&UTEXT_end - (size_t)&UTEXT_start, PGSIZE);
+    printk("kern_addr : 0x%x -> 0x%x : 0x%x\n", &UTEXT_start, &UTEXT_end, offset);
+    setupvm(kern_pgdir, &UTEXT_start, ROUNDUP(offset, PGSIZE));
+    check_kern_pgdir();
 
 	// Switch from the minimal entry page directory to the full kern_pgdir
 	// page table we just created.	Our instruction pointer should be
@@ -283,7 +288,6 @@ page_init(void)
         size_t phyaddr = i * PGSIZE + KERNBASE;
         if (phyaddr >= ROUNDDOWN(&CODE_START, PGSIZE) && phyaddr <= ((size_t)ROUNDUP(current_ptr, PGSIZE)))
         {
-            //cprintf("PAGE_INIT : %d\n", i);
             continue;
         }
         pages[i].pp_ref = 0;
@@ -291,7 +295,7 @@ page_init(void)
         page_free_list = &pages[i];
         total_page_num++;
     }
-    cprintf("page_free_list : %p %p\n", page_free_list);
+    printk("page_free_list : %p %p\n", page_free_list);
 }
 
 //
@@ -322,7 +326,7 @@ page_alloc(int alloc_flags)
         new_k_phyaddr = page2kva(new_page); 
         memset(new_k_phyaddr, 0, PGSIZE);
     }
-    
+    num_free_pages--; 
     return new_page;
 }
 
@@ -341,6 +345,7 @@ page_free(struct PageInfo *pp)
     assert(pp->pp_link == NULL);
     pp->pp_link = page_free_list;
     page_free_list = pp;
+    num_free_pages++;
 }
 
 //
@@ -577,8 +582,9 @@ tlb_invalidate(pde_t *pgdir, void *va)
 void
 setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 {
-  boot_map_region(pgdir, start, ROUNDUP(size, PGSIZE), PADDR((void*)start), PTE_W | PTE_U);
-  assert(check_va2pa(pgdir, start) == PADDR((void*)start));
+    boot_map_region(pgdir, start, ROUNDUP(size, PGSIZE), PADDR((void*)start), PTE_W | PTE_U | PTE_P);
+    printk("orig : 0x%x, check_va2pa : 0x%x, paddr : 0x%x\n", start, check_va2pa(pgdir, start), PADDR((void*)start));
+    assert(check_va2pa(pgdir, start) == PADDR((void*)start));
 }
 
 
@@ -590,6 +596,12 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 pde_t *
 setupkvm()
 {
+/*
+    extern size_t CODE_START;
+    size_t code_start = (size_t)&CODE_START;
+    size_t code_end = (size_t)boot_alloc(0); 
+    setupvm(kern_pgdir, code_start, ROUNDUP(code_end - code_start, PGSIZE));
+*/
 }
 
 
@@ -654,7 +666,6 @@ check_page_free_list(bool only_low_memory)
     int current = 0;
 	for (pp = page_free_list; pp; pp = pp->pp_link) {
 		// check that we didn't corrupt the free list itself
-        //cprintf("current = %d, %d\n", current++, nfree_extmem);
 		assert(pp >= pages);
 		assert(pp < pages + npages);
 		assert(((char *) pp - (char *) pages) % sizeof(*pp) == 0);
