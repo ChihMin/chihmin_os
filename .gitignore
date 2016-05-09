@@ -8,3 +8,6 @@ tags
 *.o
 *.asm
 kernel/system
+*.img
+*.out
+boot/boot

@@ -276,12 +276,12 @@ page_init(void)
     size_t ext_page = EXTPHYSMEM / PGSIZE;
     size_t i;
     size_t current_ptr = (size_t)boot_alloc(0);
-    size_t total_page_num = 0;
+    num_free_pages = 0;
     for (i = 1; i < npages_basemem; i++) {
         pages[i].pp_ref = 0;
         pages[i].pp_link = page_free_list;
         page_free_list = &pages[i];
-        total_page_num++;
+        num_free_pages++;
     }
 
     for (i = ext_page; i < npages; i++) {
@@ -293,7 +293,7 @@ page_init(void)
         pages[i].pp_ref = 0;
         pages[i].pp_link = page_free_list;
         page_free_list = &pages[i];
-        total_page_num++;
+        num_free_pages++;
     }
     printk("page_free_list : %p %p\n", page_free_list);
 }
@@ -427,7 +427,7 @@ boot_map_region(pde_t *pgdir, uintptr_t va, size_t size, physaddr_t pa, int perm
     size_t current_size;
     for (current_size = 0; current_size < size; current_size += PGSIZE) {
         page_entry = pgdir_walk(pgdir, va + current_size, 1);
-        *page_entry = (pa + current_size) | perm;
+        *page_entry = (pa + current_size) | perm | PTE_P;
     }
 }
 
@@ -582,8 +582,8 @@ tlb_invalidate(pde_t *pgdir, void *va)
 void
 setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 {
-    boot_map_region(pgdir, start, ROUNDUP(size, PGSIZE), PADDR((void*)start), PTE_W | PTE_U | PTE_P);
-    printk("orig : 0x%x, check_va2pa : 0x%x, paddr : 0x%x\n", start, check_va2pa(pgdir, start), PADDR((void*)start));
+    boot_map_region(pgdir, start, ROUNDUP(size, PGSIZE), PADDR((void*)start), PTE_W | PTE_U);
+    //printk("orig : 0x%x, check_va2pa : 0x%x, size : 0x%x\n", start, check_va2pa(pgdir, start), size);
     assert(check_va2pa(pgdir, start) == PADDR((void*)start));
 }
 
@@ -596,12 +596,16 @@ setupvm(pde_t *pgdir, uint32_t start, uint32_t size)
 pde_t *
 setupkvm()
 {
-/*
-    extern size_t CODE_START;
-    size_t code_start = (size_t)&CODE_START;
-    size_t code_end = (size_t)boot_alloc(0); 
-    setupvm(kern_pgdir, code_start, ROUNDUP(code_end - code_start, PGSIZE));
-*/
+    pde_t* pgdir;
+    struct PageInfo *page = page_alloc(1); 
+    if (page == NULL)
+        return NULL;
+    pgdir = page2kva(page);
+    //boot_map_region(pgdir, UPAGES, ROUNDUP((sizeof(struct PageInfo) * npages), PGSIZE), PADDR(pages), PTE_U);
+    boot_map_region(pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), (PTE_W)); 
+    boot_map_region(pgdir, KERNBASE, (1<<32)-KERNBASE, 0, (PTE_W));
+    boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, (PTE_W));
+    return pgdir;
 }
 
 

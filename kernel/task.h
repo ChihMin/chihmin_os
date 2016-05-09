@@ -5,6 +5,7 @@
 #include <kernel/mem.h>
 #define NR_TASKS	10
 #define TIME_QUANT	100
+#define PAGES_PER_TASK 10
 
 typedef enum
 {
@@ -25,8 +26,7 @@ typedef struct
 	struct Trapframe tf; //Saved registers
 	int32_t remind_ticks;
 	TaskState state;	//Task state
-  pde_t *pgdir;  //Per process Page Directory
-	
+    pde_t *pgdir;  //Per process Page Directory
 } Task;
 
 void task_init();

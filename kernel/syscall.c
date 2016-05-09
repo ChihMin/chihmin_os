@@ -19,6 +19,7 @@ int32_t do_getc()
 	return k_getc();
 }
 
+extern Task * cur_task;
 int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
 	int32_t retVal = -1;
@@ -45,7 +46,11 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
 		/* TODO: Lab 5
          * Get current task's pid
          */
-		break;
+        if (cur_task != NULL)
+            retVal = cur_task->task_id;
+		else
+            retVal = -1;
+        break;
 
 	case SYS_sleep:
 		/* TODO: Lab 5
@@ -93,6 +98,7 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
         /* TODO: Lab 5
          * You can reference kernel/screen.c
          */
+        sys_cls();
         break;
 
     case SYS_test:

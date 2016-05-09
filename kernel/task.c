@@ -95,28 +95,50 @@ extern void sched_yield(void);
  * 6. Return the pid of the newly created task.
  *
  */
+
 int task_create()
 {
+    struct PageInfo *pages[PAGES_PER_TASK];
 	Task *ts = NULL;
-
+    int i; 
+    int task_id;
 	/* Find a free task structure */
+    for (i = 0; i < NR_TASKS; ++i) {
+        ts = &tasks[i];
+        task_id = i;
+        if (ts->state == TASK_FREE) 
+            break;
+    }
+        
+    /* Setup Page Directory and pages for kernel*/
+    if (!(ts->pgdir = setupkvm()))
+        panic("Not enough memory for per process page directory!\n");
 
-  /* Setup Page Directory and pages for kernel*/
-  if (!(ts->pgdir = setupkvm()))
-    panic("Not enough memory for per process page directory!\n");
-
-  /* Setup User Stack */
+    /* Setup User Stack */
+    
+    for (i = USTACKTOP - USR_STACK_SIZE; i < USTACKTOP; i = i + PGSIZE) {
+        struct PageInfo *pp = page_alloc(1);
+        if (page_insert(ts->pgdir, pp, i, PTE_U | PTE_W))
+            panic("Not enough memory for setup user stack!\n");    
+    }
 
 	/* Setup Trapframe */
 	memset( &(ts->tf), 0, sizeof(ts->tf));
 
 	ts->tf.tf_cs = GD_UT | 0x03;
-	ts->tf.tf_ds = GD_UD | 0x03;
-	ts->tf.tf_es = GD_UD | 0x03;
+    ts->tf.tf_ds = GD_UD | 0x03;
+    ts->tf.tf_es = GD_UD | 0x03;
 	ts->tf.tf_ss = GD_UD | 0x03;
 	ts->tf.tf_esp = USTACKTOP-PGSIZE;
 
 	/* Setup task structure (task_id and parent_id) */
+    ts->task_id = task_id;
+    ts->remind_ticks = 1000000;
+    if (cur_task != NULL) 
+        ts->parent_id = cur_task->task_id;
+    else
+        ts->parent_id = -1;
+    return task_id;
 }
 
 
@@ -198,12 +220,12 @@ int sys_fork()
  */
 void task_init()
 {
-  extern int user_entry();
-	int i;
-  UTEXT_SZ = (uint32_t)(UTEXT_end - UTEXT_start);
-  UDATA_SZ = (uint32_t)(UDATA_end - UDATA_start);
-  UBSS_SZ = (uint32_t)(UBSS_end - UBSS_start);
-  URODATA_SZ = (uint32_t)(URODATA_end - URODATA_start);
+    extern int user_entry();
+    int i;
+    UTEXT_SZ = (uint32_t)(UTEXT_end - UTEXT_start);
+    UDATA_SZ = (uint32_t)(UDATA_end - UDATA_start);
+    UBSS_SZ = (uint32_t)(UBSS_end - UBSS_start);
+    URODATA_SZ = (uint32_t)(URODATA_end - URODATA_start);
 
 	/* Initial task sturcture */
 	for (i = 0; i < NR_TASKS; i++)
@@ -229,13 +251,15 @@ void task_init()
 	/* Setup first task */
 	i = task_create();
 	cur_task = &(tasks[i]);
-
-  /* For user program */
-  setupvm(cur_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-  setupvm(cur_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-  setupvm(cur_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-  setupvm(cur_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
-  cur_task->tf.tf_eip = (uint32_t)user_entry;
+    
+    printk("create_task id = %d, parent_id = %d\n", cur_task->task_id, cur_task->parent_id);
+    /* For user program */
+    setupvm(cur_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+    setupvm(cur_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+    setupvm(cur_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+    setupvm(cur_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+    
+    cur_task->tf.tf_eip = (uint32_t)user_entry;
 	
 	/* Load GDT&LDT */
 	lgdt(&gdt_pd);

@@ -15,15 +15,22 @@ int mem_stat(int argc, char **argv);
 int print_tick(int argc, char **argv);
 int chgcolor(int argc, char **argv);
 int forktest(int argc, char **argv);
+int print_pid(int argc, char **argv);
 
 struct Command commands[] = {
   { "help", "Display this list of commands", mon_help },
   { "mem_stat", "Show current usage of physical memory", mem_stat },
   { "print_tick", "Display system tick", print_tick },
   { "chgcolor", "Change screen text color", chgcolor },
-  { "forktest", "Test functionality of fork()", forktest }
+  { "forktest", "Test functionality of fork()", forktest },
+  { "print_pid", "Get current pid number", print_pid }
 };
 const int NCOMMANDS = (sizeof(commands)/sizeof(commands[0]));
+
+int print_pid(int argc, char **argv) {
+    cprintf("Current pid is %d\n", getpid());
+    return 0;
+}
 
 int mem_stat(int argc, char **argv)
 {
@@ -62,6 +69,7 @@ int chgcolor(int argc, char **argv)
   }
   return 0;
 }
+
 
 #define WHITESPACE "\t\r\n "
 #define MAXARGS 16
