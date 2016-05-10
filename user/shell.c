@@ -127,7 +127,7 @@ void task_job()
 	for (i = 0; i < 10; i++)
 	{
 		cprintf("Im %d, now=%d\n", pid, i);
-		sleep(100);
+	//	sleep(100);
 	}
 }
 
@@ -159,7 +159,10 @@ int forktest(int argc, char **argv)
 
 int fork_single(int argc, char **argv) {
     int pid = fork();
-    cprintf("Current task[%d]: fork child ID = %d\n", getpid(), pid);
+    //cprintf("Current task[%d]: fork child ID = %d\n", getpid(), pid);
+    task_job();
+    kill_self();
+        
     return 0;
 }
 

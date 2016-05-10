@@ -188,7 +188,7 @@ static void task_free(int pid)
     Task *task = &tasks[pid];
     int i;
     
-    //lcr3(kern_pgdir);
+    lcr3(PADDR(kern_pgdir));
     for (i = USTACKTOP - USR_STACK_SIZE; i < USTACKTOP; i += PGSIZE) 
         page_remove(task->pgdir, i);
     ptable_remove(task->pgdir);
@@ -209,6 +209,7 @@ void sys_kill(int pid)
             return;
         task->state = TASK_FREE;
         task_free(pid);
+        sched_yield();
     }
 }
 

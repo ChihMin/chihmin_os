@@ -23,15 +23,16 @@ extern Task * cur_task;
 extern Task tasks[];
 void sched_yield(void)
 {
-    //lcr3(PADDR(kern_pgdir));
     Task *next_task = NULL;
     Task *last_task = cur_task;
     int i;
  
     int start = (cur_task->task_id + 1) % NR_TASKS;
-    printk("[%s] start task id = %d\n", __func__, cur_task->task_id);
-
-    cur_task->state = TASK_RUNNABLE;
+    //printk("[%s] start task id = %d\n", __func__, cur_task->task_id);
+    
+    if (cur_task->state == TASK_RUNNING)
+        cur_task->state = TASK_RUNNABLE;
+    
     while (!next_task) {
         if (tasks[start].state == TASK_RUNNABLE) 
             next_task = &tasks[start];
