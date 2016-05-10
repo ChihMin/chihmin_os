@@ -153,14 +153,14 @@ int task_create()
 
 	/* Setup task structure (task_id and parent_id) */
     ts->task_id = task_id;
-    ts->remind_ticks = 1000000;
+    ts->remind_ticks = 0;
     
     if (cur_task != NULL) 
         ts->parent_id = cur_task->task_id;
     else
         ts->parent_id = -1;
     ts->state = TASK_RUNNABLE;
-    
+     
     return task_id;
 }
 

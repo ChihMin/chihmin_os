@@ -127,7 +127,7 @@ void task_job()
 	for (i = 0; i < 10; i++)
 	{
 		cprintf("Im %d, now=%d\n", pid, i);
-	//	sleep(100);
+		sleep(100);
 	}
 }
 
