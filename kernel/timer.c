@@ -29,7 +29,7 @@ void timer_handler(struct Trapframe *tf)
 
   extern Task *cur_task;
 
-  if (cur_task != NULL)
+  if (!(jiffies % 1000) && cur_task != NULL)
   {
   /* TODO: Lab 5
    * 1. Maintain the status of slept tasks
@@ -41,6 +41,7 @@ void timer_handler(struct Trapframe *tf)
    * 4. sched_yield() if the time is up for current task
    *
    */
+    sched_yield();
   }
 }
 

@@ -19,10 +19,30 @@
 * 4. CONTEXT SWITCH, leverage the macro ctx_switch(ts)
 *    Please make sure you understand the mechanism.
 */
+extern Task * cur_task;
+extern Task tasks[];
 void sched_yield(void)
 {
-	extern Task tasks[];
-	extern Task *cur_task;
+    //lcr3(PADDR(kern_pgdir));
+    Task *next_task = NULL;
     Task *last_task = cur_task;
-    int cur_task_id = cur_task->task_id;
+    int i;
+ 
+    int start = (cur_task->task_id + 1) % NR_TASKS;
+    printk("[%s] start task id = %d\n", __func__, cur_task->task_id);
+
+    cur_task->state = TASK_RUNNABLE;
+    while (!next_task) {
+        if (tasks[start].state == TASK_RUNNABLE) 
+            next_task = &tasks[start];
+        start = (start + 1) % NR_TASKS;
+    }
+    
+    next_task->state = TASK_RUNNING;
+    if (next_task != cur_task) {
+        cur_task = next_task;
+        lcr3(PADDR(next_task->pgdir));
+        ctx_switch(next_task);
+    }
+
 }

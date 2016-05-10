@@ -178,6 +178,11 @@ int kill_pid(int argc, char **argv) {
     kill(sum);
     return 0; 
 }
+int fork_context() {
+    int pid = fork();
+    cprintf("Current task[%d]: fork child ID = %d\n", getpid(), pid);
+    return 0;
+}
 
 void shell()
 {
@@ -188,7 +193,7 @@ void shell()
 
   cprintf("Welcome to the OSDI course!\n");
   cprintf("Type 'help' for a list of commands.\n");
-
+    
   while(1)
   {
     buf = readline("OSDI> ");
