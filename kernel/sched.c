@@ -23,4 +23,6 @@ void sched_yield(void)
 {
 	extern Task tasks[];
 	extern Task *cur_task;
+    Task *last_task = cur_task;
+    int cur_task_id = cur_task->task_id;
 }

@@ -16,6 +16,8 @@ int print_tick(int argc, char **argv);
 int chgcolor(int argc, char **argv);
 int forktest(int argc, char **argv);
 int print_pid(int argc, char **argv);
+int fork_single(int argc, char **argv);
+int kill_pid(int argc, char **argv);
 
 struct Command commands[] = {
   { "help", "Display this list of commands", mon_help },
@@ -23,7 +25,9 @@ struct Command commands[] = {
   { "print_tick", "Display system tick", print_tick },
   { "chgcolor", "Change screen text color", chgcolor },
   { "forktest", "Test functionality of fork()", forktest },
-  { "print_pid", "Get current pid number", print_pid }
+  { "print_pid", "Get current pid number", print_pid },
+  { "fork_single", "Fork only one process", fork_single},
+  { "kill_pid", "Kill specific process id", kill_pid}
 };
 const int NCOMMANDS = (sizeof(commands)/sizeof(commands[0]));
 
@@ -151,6 +155,28 @@ int forktest(int argc, char **argv)
   /* task recycle */
   kill_self();
   return 0;
+}
+
+int fork_single(int argc, char **argv) {
+    int pid = fork();
+    cprintf("Current task[%d]: fork child ID = %d\n", getpid(), pid);
+    return 0;
+}
+
+int kill_pid(int argc, char **argv) {
+    if (argc < 2) {
+        cprintf("Please input correct format : kill_pid ${pid}");
+        return 0;
+    }
+
+    int sum = 0;
+    int i;
+    int len = strlen(argv[1]);
+    for (i = 0; i < len; ++i)
+        sum = sum * 10 + argv[1][i] - '0';
+    cprintf("[kill pid] argc = %d, argv =  %d\n", argc, sum);
+    kill(sum);
+    return 0; 
 }
 
 void shell()

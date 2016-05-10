@@ -5,6 +5,7 @@
 #include <inc/memlayout.h>
 #include <kernel/task.h>
 #include <kernel/mem.h>
+#include <inc/error.h>
 
 // Global descriptor table.
 //
@@ -103,23 +104,42 @@ int task_create()
     int i; 
     int task_id;
 	/* Find a free task structure */
-    for (i = 0; i < NR_TASKS; ++i) {
+    bool find_free_task = false;
+    int id_start = cur_task ? cur_task->task_id : -1;
+    for (i = (id_start + 1) % NR_TASKS; i != id_start; i = (i + 1) % NR_TASKS) {
         ts = &tasks[i];
         task_id = i;
-        if (ts->state == TASK_FREE) 
+        if (ts->state == TASK_FREE) {
+            find_free_task = true;
             break;
+        } 
     }
-        
+    
+    if (!find_free_task)
+        return -E_NO_MEM;
+
     /* Setup Page Directory and pages for kernel*/
     if (!(ts->pgdir = setupkvm()))
         panic("Not enough memory for per process page directory!\n");
 
-    /* Setup User Stack */
     
+    /* Setup User Stack */
+    /* Here should handle if there's no enough memory to alloc, */
+    /* and prevent from memory leakage */
+    struct PageInfo *new_page_array[USR_STACK_SIZE/PGSIZE];
+    int current_page = 0;
+    int j;
     for (i = USTACKTOP - USR_STACK_SIZE; i < USTACKTOP; i = i + PGSIZE) {
         struct PageInfo *pp = page_alloc(1);
-        if (page_insert(ts->pgdir, pp, i, PTE_U | PTE_W))
-            panic("Not enough memory for setup user stack!\n");    
+        if (page_insert(ts->pgdir, pp, i, PTE_U | PTE_W)) {
+            printk("No memory for setup user stack!\n");
+            for (j = 0; j < current_page; ++j)
+                page_free(new_page_array[j]);
+            pgdir_remove(ts->pgdir);
+            return -E_NO_MEM;
+        }
+        else
+            new_page_array[current_page++] = pp;
     }
 
 	/* Setup Trapframe */
@@ -134,10 +154,13 @@ int task_create()
 	/* Setup task structure (task_id and parent_id) */
     ts->task_id = task_id;
     ts->remind_ticks = 1000000;
+    
     if (cur_task != NULL) 
         ts->parent_id = cur_task->task_id;
     else
         ts->parent_id = -1;
+    ts->state = TASK_RUNNABLE;
+    
     return task_id;
 }
 
@@ -159,20 +182,34 @@ int task_create()
  *
  * HINT: You can refer to page_remove, ptable_remove, and pgdir_remove
  */
+//extern pgdir* kern_pgdir;
 static void task_free(int pid)
 {
+    Task *task = &tasks[pid];
+    int i;
+    
+    //lcr3(kern_pgdir);
+    for (i = USTACKTOP - USR_STACK_SIZE; i < USTACKTOP; i += PGSIZE) 
+        page_remove(task->pgdir, i);
+    ptable_remove(task->pgdir);
+    pgdir_remove(task->pgdir); 
 }
 
 void sys_kill(int pid)
 {
+    /* TODO: Lab 5
+     * Remember to change the state of tasks
+     * Free the memory
+     * and invoke the scheduler for yield
+     */
 	if (pid > 0 && pid < NR_TASKS)
 	{
-	/* TODO: Lab 5
-   * Remember to change the state of tasks
-   * Free the memory
-   * and invoke the scheduler for yield
-   */
-	}
+        Task *task = &tasks[pid];
+        if (task->state == TASK_FREE)
+            return;
+        task->state = TASK_FREE;
+        task_free(pid);
+    }
 }
 
 /* TODO: Lab 5
@@ -201,17 +238,42 @@ void sys_kill(int pid)
  */
 int sys_fork()
 {
-  /* pid for newly created process */
-  int pid;
-	if ((uint32_t)cur_task)
-	{
-    /* Step 4: All user program use the same code for now */
-    setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+    /* pid for newly created process */
+    int pid, i;
+    Task *new_task;
+    if ((uint32_t)cur_task)
+    {
+        pid = task_create();
+        if (pid < 0)     // create task error
+            return -1;
+        
+        /* Step 2: copy parents' frames to children's */
+        new_task = &tasks[pid];
+        new_task->tf = cur_task->tf;
+        
+        /* Step 3: copy the old stack to the new one */
+        for (i = USTACKTOP - USR_STACK_SIZE; i < USTACKTOP; i += PGSIZE) {
+            struct PageInfo* dst_page;
+            uint32_t dst_addr;
 
-	}
+            dst_page = page_lookup(new_task->pgdir, i, NULL);
+            dst_addr = page2kva(dst_page);
+            
+            memcpy(dst_addr, i, PGSIZE);
+        }
+        /* Step 4: All user program use the same code for now */
+        setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+        setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+        setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+        setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);       
+        /* Step 5: dispatch return value */
+        /* Returned value for child process */
+        new_task->tf.tf_regs.reg_eax = 0;
+        
+        /* Return to parent process */
+        return pid; // return child pid to parent
+    }
+    return -1;  // fork error 
 }
 
 /* TODO: Lab5

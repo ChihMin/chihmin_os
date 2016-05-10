@@ -40,4 +40,6 @@ void sleep(uint32_t ticks);
 
 void puts(const char *s, size_t len);
 int getc(void);
+
+void kill(int pid);
 #endif

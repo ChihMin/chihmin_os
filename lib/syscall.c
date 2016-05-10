@@ -4,7 +4,6 @@
 #define SYSCALL_NOARG(name, ret_t) \
    ret_t name(void) { return syscall((SYS_##name), 0, 0, 0, 0, 0); }
 
-
 static  int32_t
 syscall(int num, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
 {
@@ -71,7 +70,14 @@ void settextcolor(unsigned char forecolor, unsigned char backcolor) {
 SYSCALL_NOARG(fork, int32_t);
 SYSCALL_NOARG(getpid, int32_t);
 
-void kill_self() { }
+void kill_self() { 
+    syscall(SYS_kill, getpid(), 0, 0, 0, 0);
+}
 
-void sleep(uint32_t ticks) {}
+void sleep(uint32_t ticks) {
+    syscall(SYS_sleep, ticks, 0, 0, 0, 0);
+}
 
+void kill(int pid) {
+    syscall(SYS_kill, pid, 0, 0, 0, 0);
+}
