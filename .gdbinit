@@ -1,7 +1,8 @@
 file kernel/system
 target remote localhost:1234
-b kernel/mem.c:mem_init
-
+# b kernel/main.c:kernel_main
+# b kernel/syscall.c:syscall_handler
+b sched_yield
 def link
     target remote localhost:1234
 end

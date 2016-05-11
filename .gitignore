@@ -3,3 +3,11 @@
 .*.swp
 tags
 core*
+cscope.out
+tags
+*.o
+*.asm
+kernel/system
+*.img
+*.out
+boot/boot
