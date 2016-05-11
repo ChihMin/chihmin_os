@@ -59,8 +59,8 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
          * You can reference kernel/sched.c for yielding the task
          */
         //printk("[PID %d] Sleep %d ticks\n", cur_task->task_id, a1);
-        cur_task->remind_ticks = sys_get_ticks() + a1;
-        //cur_task->state = TASK_RUNNABLE;
+        cur_task->remind_ticks = a1;
+        cur_task->state = TASK_SLEEP;
         sched_yield();
 		break;
 

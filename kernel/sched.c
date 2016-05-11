@@ -34,8 +34,14 @@ void sched_yield(void)
         cur_task->state = TASK_RUNNABLE;
     
     while (!next_task) {
-        if (tasks[start].state == TASK_RUNNABLE && tasks[start].remind_ticks < sys_get_ticks()) 
+        if (tasks[start].state == TASK_SLEEP 
+            && tasks[start].remind_ticks <= 0)
+                tasks[start].state = TASK_RUNNABLE;
+
+        if (tasks[start].state == TASK_RUNNABLE) { 
             next_task = &tasks[start];
+            next_task->remind_ticks = 100;  // set 100 ticks for one task
+        }
         start = (start + 1) % NR_TASKS;
     }
     

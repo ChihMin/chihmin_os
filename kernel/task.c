@@ -109,7 +109,7 @@ int task_create()
     for (i = (id_start + 1) % NR_TASKS; i != id_start; i = (i + 1) % NR_TASKS) {
         ts = &tasks[i];
         task_id = i;
-        if (ts->state == TASK_FREE) {
+        if (ts->state == TASK_FREE || ts->state == TASK_STOP) {
             find_free_task = true;
             break;
         } 
@@ -153,7 +153,7 @@ int task_create()
 
 	/* Setup task structure (task_id and parent_id) */
     ts->task_id = task_id;
-    ts->remind_ticks = 0;
+    ts->remind_ticks = 100;
     
     if (cur_task != NULL) 
         ts->parent_id = cur_task->task_id;
@@ -205,9 +205,9 @@ void sys_kill(int pid)
 	if (pid > 0 && pid < NR_TASKS)
 	{
         Task *task = &tasks[pid];
-        if (task->state == TASK_FREE)
+        if (task->state == TASK_FREE || task->state == TASK_STOP)
             return;
-        task->state = TASK_FREE;
+        task->state = TASK_STOP;
         task_free(pid);
         sched_yield();
     }
