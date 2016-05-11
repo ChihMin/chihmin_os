@@ -17,7 +17,8 @@ enum {
   SYS_cls,
 
   NSYSCALLS,
-  SYS_test
+  SYS_test,
+  SYS_parent
 };
 
 int32_t get_num_used_page(void);

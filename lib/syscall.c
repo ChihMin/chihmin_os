@@ -81,3 +81,5 @@ void sleep(uint32_t ticks) {
 void kill(int pid) {
     syscall(SYS_kill, pid, 0, 0, 0, 0);
 }
+
+SYSCALL_NOARG(parent, int32_t);

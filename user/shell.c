@@ -120,13 +120,14 @@ static int runcmd(char *buf)
 
 void task_job()
 {
-	int pid = 0;
+	int pid = 0, parent_id = 0;
 	int i;
 
 	pid = getpid();
+    parent_id = parent();
 	for (i = 0; i < 10; i++)
 	{
-		cprintf("Im %d, now=%d\n", pid, i);
+		cprintf("Im %d, parent = %d, now=%d\n", pid, parent_id, i);
 		sleep(100);
 	}
 }
