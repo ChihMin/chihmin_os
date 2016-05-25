@@ -124,12 +124,10 @@ struct fs_fd* fd_get(int fd)
 
 	if ( fd < 0 || fd > FS_FD_MAX ) return NULL;
 
-	//dfs_lock();
 	d = &fd_table[fd];
 
 	/* increase the reference count */
 	d->ref_count ++;
-	//dfs_unlock();
 
 	return d;
 }
@@ -141,7 +139,7 @@ struct fs_fd* fd_get(int fd)
  */
 void fd_put(struct fs_fd* fd)
 {
-	//dfs_lock();
+
 	fd->ref_count --;
 
 	/* clear this fd entry */
@@ -150,7 +148,6 @@ void fd_put(struct fs_fd* fd)
 		//memset(fd, 0, sizeof(struct fs_fd));
 		memset(fd->data, 0, sizeof(FIL));
 	}
-	//dfs_unlock();
 };
 
 
