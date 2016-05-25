@@ -3,7 +3,6 @@
 #include <inc/shell.h>
 #include <inc/error.h>
 #include <inc/syscall.h>
-#include <inc/string.h>
 
 #define BUFLEN 1024
 static char buf[BUFLEN];

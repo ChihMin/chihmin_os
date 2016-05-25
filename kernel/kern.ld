@@ -6,9 +6,10 @@ OUTPUT_ARCH(i386)
 ENTRY(_start)
 kernel_load_addr = 0xF0100000;
 
+
 SECTIONS
 {
-. = kernel_load_addr;
+  . = kernel_load_addr;
 
   /* AT(...) gives the load address of this section, which tells
   the boot loader where to load the kernel in physical memory */
@@ -41,8 +42,8 @@ PROVIDE(URODATA_start = .);
   lib/syscall.o (.rodata)
   user/shell.o (.rodata)
   user/main.o (.rodata)
-PROVIDE(URODATA_end = .);
   *(.rodata .rodata.* .gnu.linkonce.r.*)
+PROVIDE(URODATA_end = .);  
 }
 PROVIDE(rdata_end = .);
 

@@ -38,7 +38,7 @@ void	            page_decref             (struct PageInfo *pp);
 struct PageInfo   *page_alloc             (int alloc_flags);
 struct PageInfo   *page_lookup            (pde_t *pgdir, void *va, pte_t **pte_store);
 pde_t             *setupkvm               (void);
-void              setupvm                 (pde_t *pgdir, uint32_t start, uint32_t size);
+void              setupuvm                (pde_t *pgdir, uint32_t start, uint32_t size);
 pte_t             *pgdir_walk             (pde_t *pgdir, const void *va, int create);
 void	            tlb_invalidate          (pde_t *pgdir, void *va);
 void              mem_init                (void);
@@ -84,5 +84,6 @@ page2kva(struct PageInfo *pp)
 {
 	return KADDR(page2pa(pp));
 }
+
 
 #endif

@@ -50,7 +50,7 @@ struct Pseudodesc gdt_pd = {
 
 
 
-static struct tss_struct tss;
+static struct Taskstate tss;
 Task tasks[NR_TASKS];
 
 extern char bootstack[];
@@ -70,42 +70,29 @@ Task *cur_task = NULL; //Current running task
 extern void sched_yield(void);
 
 
-/* TODO: Lab5
- * 1. Find a free task structure for the new task,
- *    the global task list is in the array "tasks".
- *    You should find task that is in the state "TASK_FREE"
- *    If cannot find one, return -1.
- *
- * 2. Setup the page directory for the new task
- *
- * 3. Setup the user stack for the new task, you can use
- *    page_alloc() and page_insert(), noted that the va
- *    of user stack is started at USTACKTOP and grows down
- *    to USR_STACK_SIZE, remember that the permission of
- *    those pages should include PTE_U
- *
- * 4. Setup the Trapframe for the new task
- *    We've done this for you, please make sure you
- *    understand the code.
- *
- * 5. Setup the task related data structure
- *    You should fill in task_id, state, parent_id,
- *    and its schedule time quantum (remind_ticks).
- *
- * 6. Return the pid of the newly created task.
- *
- */
+//Find avaiable task slot and setup 
 int task_create()
 {
-	Task *ts = NULL;
+  struct PageInfo *p;
 
 	/* Find a free task structure */
+	int i = 0, j = 0;
+	Task *ts = NULL;
+	for (i = 0; i < NR_TASKS; i++)
+	{
+		if (tasks[i].state == TASK_FREE || tasks[i].state == TASK_STOP)
+		{
+			ts = &(tasks[i]);
+			break;
+		}
+	}
+	if (i >= NR_TASKS)
+		return -1;
 
-  /* Setup Page Directory and pages for kernel*/
+  /* Setup Page Directory */
+
   if (!(ts->pgdir = setupkvm()))
     panic("Not enough memory for per process page directory!\n");
-
-  /* Setup User Stack */
 
 	/* Setup Trapframe */
 	memset( &(ts->tf), 0, sizeof(ts->tf));
@@ -116,86 +103,107 @@ int task_create()
 	ts->tf.tf_ss = GD_UD | 0x03;
 	ts->tf.tf_esp = USTACKTOP-PGSIZE;
 
+  /* Setup User Stack */
+  for (j = 0; j < USR_STACK_SIZE; j += PGSIZE)
+  {
+    p = page_alloc(ALLOC_ZERO);
+    if (!p || page_insert(ts->pgdir, p, (void*)(USTACKTOP-USR_STACK_SIZE+j), PTE_W|PTE_U))
+      panic("Not enough memory for user stack!\n");
+  }
+	
 	/* Setup task structure (task_id and parent_id) */
+	ts->task_id = i;
+	ts->state = TASK_RUNNABLE;
+	ts->parent_id = ((uint32_t)cur_task)?cur_task->task_id:0;
+	ts->remind_ticks = TIME_QUANT;
+	return i;
 }
 
-
-/* TODO: Lab5
- * This function free the memory allocated by kernel.
- *
- * 1. Be sure to change the page directory to kernel's page
- *    directory to avoid page fault when removing the page
- *    table entry.
- *    You can change the current directory with lcr3 provided
- *    in inc/x86.h
- *
- * 2. You have to remove pages of USER STACK
- *
- * 3. You have to remove pages of page table
- *
- * 4. You have to remove pages of page directory
- *
- * HINT: You can refer to page_remove, ptable_remove, and pgdir_remove
- */
+/* Free task of pid */
 static void task_free(int pid)
+{
+  lcr3(PADDR(kern_pgdir));
+  unsigned i;
+  /* Free pages of user stack */
+  for (i = 0; i < USR_STACK_SIZE; i += PGSIZE)
+    page_remove(tasks[pid].pgdir, (void*)(USTACKTOP-USR_STACK_SIZE+i));
+  /* Free page tables */
+  ptable_remove(tasks[pid].pgdir);
+  /* Free page directory */
+  pgdir_remove(tasks[pid].pgdir);
+}
+
+void task_switch(int id)
 {
 }
 
 void sys_kill(int pid)
 {
+	/* Lab4: Died task recycele, just set task state as TASK_STOP and yield */
+  
 	if (pid > 0 && pid < NR_TASKS)
 	{
-	/* TODO: Lab 5
-   * Remember to change the state of tasks
-   * Free the memory
-   * and invoke the scheduler for yield
-   */
+		tasks[pid].state = TASK_STOP;
+    task_free(pid);
+		sched_yield();
 	}
 }
-
-/* TODO: Lab 5
- * In this function, you have several things todo
- *
- * 1. Use task_create() to create an empty task, return -1
- *    if cannot create a new one.
- *
- * 2. Copy the trap frame of the parent to the child
- *
- * 3. Copy the content of the old stack to the new one,
- *    you can use memcpy to do the job. Remember all the
- *    address you use should be virtual address.
- *
- * 4. Setup virtual memory mapping of the user prgram 
- *    in the new task's page table.
- *    According to linker script, you can determine where
- *    is the user program. We've done this part for you,
- *    but you should understand how it works.
- *
- * 5. The very important step is to let child and 
- *    parent be distinguishable!
- *
- * HINT: You should understand how system call return
- * it's return value.
- */
-int sys_fork()
+void sys_kill_self()
 {
-  /* pid for newly created process */
-  int pid;
+	/*Lab4: Died task recycele */
 	if ((uint32_t)cur_task)
 	{
-    /* Step 4: All user program use the same code for now */
-    setupvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-    setupvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
-
+		cur_task->state = TASK_STOP;
+    task_free(cur_task->task_id);
+		sched_yield();
 	}
 }
 
-/* TODO: Lab5
- * We've done the initialization for you,
- * please make sure you understand the code.
- */
+int sys_fork()
+{
+	int pid = -1, i;
+  uint32_t pa_src, pa_dst, *pte_src, *pte_dst;
+	/* Setup task space */
+	pid = task_create();
+	if (pid < 0 )
+		return -1;
+	
+	if ((uint32_t)cur_task)
+	{
+		/* Lab4: Copy parent tf to new task */
+		tasks[pid].tf = cur_task->tf;
+	
+		/* Lab4: Copy old usr_stack to new task */
+    for(i = 0; i < USR_STACK_SIZE; i += PGSIZE)
+    {
+      if((pte_src = pgdir_walk(cur_task->pgdir, (void *)(USTACKTOP-USR_STACK_SIZE+i), 0)) == 0)
+        panic("copy user stack: pte_src should exist");
+      if(!(*pte_src & PTE_P))
+        panic("copy user stack: page not present");
+      pa_src = PTE_ADDR(*pte_src);
+
+      if((pte_dst = pgdir_walk(tasks[pid].pgdir, (void *)(USTACKTOP-USR_STACK_SIZE+i), 0)) == 0)
+        panic("copy user stack: pte_dst should exist");
+      if(!(*pte_dst & PTE_P))
+        panic("copy user stack: page not present");
+      pa_dst = PTE_ADDR(*pte_dst);
+
+      memmove((char*)KADDR(pa_dst), (char*)KADDR(pa_src), PGSIZE);
+    }
+
+    /* All user program use the same code for now */
+    setupuvm(tasks[pid].pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+    setupuvm(tasks[pid].pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+    setupuvm(tasks[pid].pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+    setupuvm(tasks[pid].pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+
+		/* Lab4: Set system call's return value */
+		cur_task->tf.tf_regs.reg_eax = pid;
+		tasks[pid].tf.tf_regs.reg_eax = 0;
+	}
+
+	return pid;
+}
 void task_init()
 {
   extern int user_entry();
@@ -204,6 +212,10 @@ void task_init()
   UDATA_SZ = (uint32_t)(UDATA_end - UDATA_start);
   UBSS_SZ = (uint32_t)(UBSS_end - UBSS_start);
   URODATA_SZ = (uint32_t)(URODATA_end - URODATA_start);
+  /*printk("UText start:[%p], UText end:[%p]\n", UTEXT_start, UTEXT_end);*/
+  /*printk("UData start:[%p], UData end:[%p]\n", UDATA_start, UDATA_end);*/
+  /*printk("UBss start:[%p], UBss end:[%p]\n", UBSS_start, UBSS_end);*/
+  /*printk("URODATA start:[%p], URODATA end:[%p]\n", URODATA_start, URODATA_end);*/
 
 	/* Initial task sturcture */
 	for (i = 0; i < NR_TASKS; i++)
@@ -223,7 +235,7 @@ void task_init()
 	tss.ts_gs = GD_UD | 0x03;
 
 	/* Setup TSS in GDT */
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct tss_struct), 0);
+	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct Taskstate), 0);
 	gdt[GD_TSS0 >> 3].sd_s = 0;
 
 	/* Setup first task */
@@ -231,10 +243,10 @@ void task_init()
 	cur_task = &(tasks[i]);
 
   /* For user program */
-  setupvm(cur_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
-  setupvm(cur_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
-  setupvm(cur_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
-  setupvm(cur_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
+  setupuvm(cur_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
+  setupuvm(cur_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
+  setupuvm(cur_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
+  setupuvm(cur_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
   cur_task->tf.tf_eip = (uint32_t)user_entry;
 	
 	/* Load GDT&LDT */

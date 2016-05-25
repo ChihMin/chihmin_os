@@ -10,30 +10,30 @@
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
-
+/* TODO */
 }
 
 int sys_close(int fd)
 {
-
+/* TODO */
 }
 int sys_read(int fd, void *buf, size_t len)
 {
-
+/* TODO */
 }
 int sys_write(int fd, const void *buf, size_t len)
 {
-
+/* TODO */
 }
 
 off_t sys_lseek(int fd, off_t offset, int whence)
 {
-
+/* TODO */
 }
 
 int sys_unlink(const char *pathname)
 {
- 
+/* TODO */ 
 }
 
 

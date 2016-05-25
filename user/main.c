@@ -14,6 +14,7 @@ int user_entry()
   );
 
   cprintf("Welcome to User Land, cheers!\n");
+
   shell();
   for(;;){};
 }
