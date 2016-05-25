@@ -18,6 +18,7 @@ int forktest(int argc, char **argv);
 int print_pid(int argc, char **argv);
 int fork_single(int argc, char **argv);
 int kill_pid(int argc, char **argv);
+int spinlocktest(int argc, char **argv);
 
 struct Command commands[] = {
   { "help", "Display this list of commands", mon_help },
@@ -27,7 +28,8 @@ struct Command commands[] = {
   { "forktest", "Test functionality of fork()", forktest },
   { "print_pid", "Get current pid number", print_pid },
   { "fork_single", "Fork only one process", fork_single},
-  { "kill_pid", "Kill specific process id", kill_pid}
+  { "kill_pid", "Kill specific process id", kill_pid},
+  { "spinlocktest", "Test spinlock", spinlocktest }
 };
 const int NCOMMANDS = (sizeof(commands)/sizeof(commands[0]));
 
@@ -120,14 +122,15 @@ static int runcmd(char *buf)
 
 void task_job()
 {
-	int pid = 0, parent_id = 0;
+	int pid = 0;
+	int cid = 0;
 	int i;
 
 	pid = getpid();
-    parent_id = parent();
+	cid = getcid();
 	for (i = 0; i < 10; i++)
 	{
-		cprintf("Im %d, parent = %d, now=%d\n", pid, parent_id, i);
+		cprintf("Pid=%d, Cid=%d, now=%d\n", pid, cid, i);
 		sleep(100);
 	}
 }
@@ -152,9 +155,26 @@ int forktest(int argc, char **argv)
         else
           task_job();
     }
+    /* task recycle */
+    kill_self();
   }
-  /* task recycle */
-  kill_self();
+  return 0;
+}
+
+int spinlocktest(int argc, char **argv)
+{
+  /* Below code is running on user mode */
+  if (!fork())
+  {
+    /*Child*/
+    fork();
+    fork();
+    fork();
+    sleep(500);
+    cprintf("Pid=%d, Cid=%d\n", getpid(), getcid());
+    /* task recycle */
+    kill_self();
+  }
   return 0;
 }
 

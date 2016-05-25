@@ -7,6 +7,7 @@ enum {
   SYS_puts = 0,
   SYS_getc,
   SYS_getpid,
+  SYS_getcid,
   SYS_fork,
   SYS_kill,
   SYS_sleep,
@@ -34,6 +35,8 @@ void settextcolor(unsigned char forecolor, unsigned char backcolor);
 int32_t fork(void);
 
 int32_t getpid(void);
+
+int32_t getcid(void);
 
 void kill_self();
 
