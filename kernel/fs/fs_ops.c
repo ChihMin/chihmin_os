@@ -20,29 +20,23 @@ int fat_mkfs(const char* device_name)
 }
 int fat_open(struct fs_fd* file)
 {
-
 }
 int fat_close(struct fs_fd* file)
 {
 
 }
-
 int fat_read(struct fs_fd* file, void* buf, size_t count)
 {
 
 }
 int fat_write(struct fs_fd* file, const void* buf, size_t count)
 {
-
-
 }
 int fat_lseek(struct fs_fd* file, off_t offset)
 {
-
 }
 int fat_unlink(struct fs_fd* file, const char *pathname)
 {
-    return 0;
 }
 
 struct fs_ops elmfat_ops = {
