@@ -44,6 +44,7 @@ extern Task tasks[];
 //
 void sched_yield(void)
 {
+    return;
     Task *next_task = NULL;
     Task *last_task = cur_task;
     int i;

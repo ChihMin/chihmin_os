@@ -328,39 +328,42 @@ void task_init()
 //
 void task_init_percpu()
 {
-	
-
 	int i;
 	extern int user_entry();
 	extern int idle_entry();
 	
 	// Setup a TSS so that we get the right stack
 	// when we trap to the kernel.
-	memset(&(tss), 0, sizeof(tss));
-	tss.ts_esp0 = (uint32_t)bootstack + KSTKSIZE;
-	tss.ts_ss0 = GD_KD;
+    struct tss_struct *tss = &thiscpu->cpu_tss;
+
+	memset(tss, 0, sizeof(struct tss_struct));
+	tss->ts_esp0 = (uint32_t)percpu_kstacks[cpunum()] + KSTKSIZE;
+	tss->ts_ss0 = GD_KD;
 
 	// fs and gs stay in user data segment
-	tss.ts_fs = GD_UD | 0x03;
-	tss.ts_gs = GD_UD | 0x03;
+	tss->ts_fs = GD_UD | 0x03;
+	tss->ts_gs = GD_UD | 0x03;
 
 	/* Setup TSS in GDT */
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct tss_struct), 0);
-	gdt[GD_TSS0 >> 3].sd_s = 0;
+	gdt[(GD_TSS0 >> 3) + cpunum()] = SEG16(STS_T32A, (uint32_t)(tss), sizeof(struct tss_struct), 0);
+	gdt[(GD_TSS0 >> 3) + cpunum()].sd_s = 0;
 
 	/* Setup first task */
 	i = task_create();
 	cur_task = &(tasks[i]);
     
-    printk("create_task id = %d, parent_id = %d\n", cur_task->task_id, cur_task->parent_id);
+    printk("[CPUID %d] create_task id = %d, parent_id = %d\n", thiscpu->cpu_id, cur_task->task_id, cur_task->parent_id);
     /* For user program */
     setupvm(cur_task->pgdir, (uint32_t)UTEXT_start, UTEXT_SZ);
     setupvm(cur_task->pgdir, (uint32_t)UDATA_start, UDATA_SZ);
     setupvm(cur_task->pgdir, (uint32_t)UBSS_start, UBSS_SZ);
     setupvm(cur_task->pgdir, (uint32_t)URODATA_start, URODATA_SZ);
     
-    cur_task->tf.tf_eip = (uint32_t)user_entry;
-	
+    if (thiscpu->cpu_id == 0) 
+        cur_task->tf.tf_eip = (uint32_t)user_entry;
+    else
+        cur_task->tf.tf_eip = (uint32_t)idle_entry;
+    thiscpu->cpu_task = cur_task;	
 	/* Load GDT&LDT */
 	lgdt(&gdt_pd);
 
@@ -368,7 +371,8 @@ void task_init_percpu()
 	lldt(0);
 
 	// Load the TSS selector 
-	ltr(GD_TSS0);
+    printk("[%s] TSS selector 0x%x user_entry = 0x%x\n", __func__, GD_TSS0 + (cpunum() << 3), &user_entry);
+	ltr(GD_TSS0 + (cpunum() << 3));
 
 	cur_task->state = TASK_RUNNING;
 }

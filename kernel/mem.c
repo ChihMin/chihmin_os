@@ -210,6 +210,8 @@ mem_init(void)
 
   	// Initialize the SMP-related parts of the memory map
 	mem_init_mp();
+     boot_map_region(kern_pgdir, MPENTRY_PADDR, PGSIZE, MPENTRY_PADDR, (PTE_W)); 
+
 
 	// Check that the initial page directory has been set up correctly.
     extern size_t UTEXT_start;
@@ -697,10 +699,30 @@ setupkvm()
     if (page == NULL)
         return NULL;
     pgdir = page2kva(page);
-    //boot_map_region(pgdir, UPAGES, ROUNDUP((sizeof(struct PageInfo) * npages), PGSIZE), PADDR(pages), PTE_U);
-    boot_map_region(pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), (PTE_W)); 
+    
+    // boot_map_region(pgdir, KSTACKTOP-KSTKSIZE, KSTKSIZE, PADDR(bootstack), (PTE_W)); 
     boot_map_region(pgdir, KERNBASE, (1<<32)-KERNBASE, 0, (PTE_W));
     boot_map_region(pgdir, IOPHYSMEM, ROUNDUP((EXTPHYSMEM - IOPHYSMEM), PGSIZE), IOPHYSMEM, (PTE_W));
+    /*
+    int i;
+    for (i = 0; i < NCPU; ++i) {
+        uint32_t kstacktop_i = KSTACKTOP - i * (KSTKSIZE + KSTKGAP);
+        boot_map_region(pgdir, 
+                        ROUNDDOWN(kstacktop_i, PGSIZE) - KSTKSIZE,
+                        KSTKSIZE, 
+                        PADDR(percpu_kstacks[i]),
+                        PTE_W
+        );
+    }*/
+    uint32_t kstacktop_i = KSTACKTOP - cpunum() * (KSTKSIZE + KSTKGAP);
+    boot_map_region(pgdir, 
+                    ROUNDDOWN(kstacktop_i, PGSIZE) - KSTKSIZE,
+                    KSTKSIZE, 
+                    PADDR(percpu_kstacks[cpunum()]),
+                    PTE_W
+    );
+    
+    boot_map_region(pgdir, MMIOBASE, NCPU * PGSIZE, lapicaddr, PTE_PCD|PTE_PWT|PTE_W);
     return pgdir;
 }
 

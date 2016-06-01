@@ -127,11 +127,12 @@ void task_job()
 	int i;
 
 	pid = getpid();
-	cid = getcid();
+	// cid = getcid();
 	for (i = 0; i < 10; i++)
 	{
-		cprintf("Pid=%d, Cid=%d, now=%d\n", pid, cid, i);
-		sleep(100);
+		// cprintf("Pid=%d, Cid=%d, now=%d\n", pid, cid, i);
+	    cprintf("pid = %d, parent = %d, i = %d\n", pid, parent(), i);
+        sleep(100);
 	}
 }
 

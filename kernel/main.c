@@ -30,7 +30,7 @@ void kernel_main(void)
 	kbd_init();
   	timer_init();
   	syscall_init();
-	boot_aps();
+    boot_aps();
 
     printk("Kernel code base start=0x%08x to = 0x%08x\n", stext, etext);
     printk("Readonly data start=0x%08x to = 0x%08x\n", etext, rdata_end);
@@ -40,8 +40,9 @@ void kernel_main(void)
     /* Enable interrupt */
     __asm __volatile("sti");
     
-    lcr3(PADDR(cur_task->pgdir));
-
+    lcr3(PADDR(thiscpu->cpu_task->pgdir));
+    //printk("[%s] CPUS ADDR = 0x%x\n", __func__, thiscpu);
+     
     /* Move to user mode */
     asm volatile("movl %0,%%eax\n\t" \
     "pushl %1\n\t" \
@@ -50,7 +51,7 @@ void kernel_main(void)
     "pushl %2\n\t" \
     "pushl %3\n\t" \
     "iret\n" \
-    :: "m" (cur_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (cur_task->tf.tf_eip)
+    :: "m" (thiscpu->cpu_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (thiscpu->cpu_task->tf.tf_eip)
     :"ax");
 }
 
@@ -77,6 +78,18 @@ boot_aps(void)
 	//      -- Wait for the CPU to finish some basic setup in mp_main(
 	// 
 	// Your code here:
+    extern void mpentry_start();
+    extern void mpentry_end();
+    int i; 
+    printk("[%s] 0x%x -> 0x%x\n", __func__, &mpentry_start);
+    memmove(MPENTRY_PADDR, &mpentry_start, &mpentry_end - &mpentry_start);
+    for (i = 1; i < 4; ++i) {
+        mpentry_kstack = percpu_kstacks[i]; 
+        lapic_startap(i, MPENTRY_PADDR);
+        thiscpu->cpu_status = CPU_STARTED;
+        while (thiscpu->cpu_status == CPU_STARTED);
+    }
+    thiscpu->cpu_status = CPU_STARTED;
 }
 
 // Setup code for APs
@@ -146,25 +159,26 @@ mp_main(void)
 	 */
 	
 	// We are in high EIP now, safe to switch to kern_pgdir 
-	lcr3(PADDR(kern_pgdir));
+    
+    lcr3(PADDR(kern_pgdir));
+    lidt(&idt_pd);
 	printk("SMP: CPU %d starting\n", cpunum());
-	
+    printk("[CPUID] %d\n", thiscpu->cpu_id);
+    	
 	// Your code here:
-	
-
+    task_init_percpu();
+    cpus[0].cpu_status = CPU_UNUSED; 
 	// TODO: Lab6
 	// Now that we have finished some basic setup, it's time to tell
 	// boot_aps() we're up ( using xchg )
 	// Your code here:
 
-
-
 	/* Enable interrupt */
 	__asm __volatile("sti");
-
 	lcr3(PADDR(thiscpu->cpu_task->pgdir));
 
 	/* Move to user mode */
+    
 	asm volatile("movl %0,%%eax\n\t" \
 			"pushl %1\n\t" \
 			"pushl %%eax\n\t" \
@@ -175,4 +189,5 @@ mp_main(void)
 			:: "m" (thiscpu->cpu_task->tf.tf_esp), "i" (GD_UD | 0x03), "i" (GD_UT | 0x03), "m" (thiscpu->cpu_task->tf.tf_eip)
 			:"ax");
 
+    
 }
