@@ -722,7 +722,7 @@ setupkvm()
                     PTE_W
     );
     
-    boot_map_region(pgdir, MMIOBASE, NCPU * PGSIZE, lapicaddr, PTE_PCD|PTE_PWT|PTE_W);
+    boot_map_region(pgdir, MMIOBASE + (3) * PGSIZE, PGSIZE, lapicaddr, PTE_PCD|PTE_PWT|PTE_W);
     return pgdir;
 }
 

@@ -27,6 +27,5 @@ int idle_entry()
     "movw %%ax,%%gs" \
     :: "i" (0x20 | 0x03)
   );
-
   for(;;){};
 }

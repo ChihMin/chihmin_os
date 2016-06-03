@@ -34,7 +34,13 @@ void timer_handler(struct Trapframe *tf)
   extern Task tasks[];
 
   extern Task *cur_task;
-
+        
+lapic_eoi();
+    
+    if (jiffies % 2 == 1) 
+        printk("[%s] CPUID = %d\n", __func__, thiscpu->cpu_id);
+    else
+        printk("[%s] CPUID = %d\n", __func__, thiscpu->cpu_id);
   if (cur_task != NULL)
   {
   /* TODO: Lab 5

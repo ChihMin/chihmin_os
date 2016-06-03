@@ -83,8 +83,9 @@ boot_aps(void)
     int i; 
     printk("[%s] 0x%x -> 0x%x\n", __func__, &mpentry_start);
     memmove(MPENTRY_PADDR, &mpentry_start, &mpentry_end - &mpentry_start);
-    for (i = 1; i < 4; ++i) {
+    for (i = 1; i < 2; ++i) {
         mpentry_kstack = percpu_kstacks[i]; 
+        lapic_init();
         lapic_startap(i, MPENTRY_PADDR);
         thiscpu->cpu_status = CPU_STARTED;
         while (thiscpu->cpu_status == CPU_STARTED);
@@ -161,11 +162,14 @@ mp_main(void)
 	// We are in high EIP now, safe to switch to kern_pgdir 
     
     lcr3(PADDR(kern_pgdir));
+    
+    printk("IDT addr = 0x%x\n", PADDR(&idt_pd));
     lidt(&idt_pd);
 	printk("SMP: CPU %d starting\n", cpunum());
     printk("[CPUID] %d\n", thiscpu->cpu_id);
     	
 	// Your code here:
+
     task_init_percpu();
     cpus[0].cpu_status = CPU_UNUSED; 
 	// TODO: Lab6
