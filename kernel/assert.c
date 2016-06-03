@@ -4,6 +4,7 @@
 #include <inc/string.h>
 #include <inc/assert.h>
 
+
 extern int vprintk(const char *fmt, va_list ap);
 
 const char *panicstr;

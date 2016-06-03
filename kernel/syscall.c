@@ -1,9 +1,12 @@
 #include <kernel/task.h>
 #include <kernel/timer.h>
 #include <kernel/mem.h>
-#include <kernel/syscall.h>
-#include <kernel/trap.h>
+#include <inc/syscall.h>
 #include <inc/stdio.h>
+#include <inc/trap.h>
+
+extern void sys_settextcolor(unsigned char forecolor, unsigned char backcolor); // kernel/screen.c
+extern void sys_cls(); // kernel/screen.c
 
 void do_puts(char *str, uint32_t len)
 {
@@ -114,6 +117,16 @@ int32_t do_syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, ui
     case SYS_parent:
         retVal = cur_task->parent_id;
         break;
+    
+    /* TODO: Lab7 file I/O system call */    
+    case SYS_open:
+    case SYS_read:    
+    case SYS_write:
+    case SYS_close:   
+    case SYS_lseek:
+    case SYS_unlink:
+        retVal = -1; //Not yet implemented
+        break;
     }
     return retVal;
 }
@@ -146,5 +159,7 @@ void syscall_init()
    */
     extern void SYSCALL_ISR();
     register_handler(T_SYSCALL, &syscall_handler, &SYSCALL_ISR, 1, 3);
+	/* Initial syscall trap after trap_init()*/
+	/* Register trap handler */
 }
 

@@ -25,6 +25,7 @@ void timer_handler(struct Trapframe *tf)
 
   jiffies++;
 
+  /* Lab4: Check is need wakeup sleep task */
   extern Task tasks[];
 
   extern Task *cur_task;

@@ -9,6 +9,7 @@ _start = RELOC(entry)
 
 .text
 entry:
+  lgdt    RELOC(kgdtdesc) 
 	movw	$0x1234,0x472			# warm boot
 
 	# We haven't set up virtual memory yet, so we're running from
@@ -43,9 +44,6 @@ entry:
 
 relocated:
 
-  # Setup new gdt
-  lgdt    kgdtdesc
-
 	# Setup kernel stack
 	movl $0, %ebp
 	movl $(bootstacktop), %esp
@@ -56,13 +54,13 @@ die:
 
   .p2align 2                                # force 4 byte alignment
 
-kgdt:
+  kgdt:
   SEG_NULL    # NULL segment
 
   SEG(STA_X|STA_R, 0x0, 0xffffffff)   # Kernel code segment
   SEG(STA_W, 0x0, 0xffffffff)         # Kernel data segment
 
-kgdtdesc:
+  kgdtdesc:
   .word   0x17        # sizeof(gdt) - 1
   .long   kgdt
 

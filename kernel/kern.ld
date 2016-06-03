@@ -6,6 +6,7 @@ OUTPUT_ARCH(i386)
 ENTRY(_start)
 kernel_load_addr = 0xF0100000;
 
+
 SECTIONS
 {
     . = kernel_load_addr;

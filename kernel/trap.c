@@ -220,13 +220,10 @@ void trap_init()
 	}
 
 
-  /* Using default_trap_handler */
 	extern void GPFLT();
 	SETGATE(idt[T_GPFLT], 1, GD_KT, GPFLT, 0);
 	extern void STACK_ISR();
 	SETGATE(idt[T_STACK], 1, GD_KT, STACK_ISR, 0);
-
-  /* Using custom trap handler */
 	extern void PGFLT();
     register_handler(T_PGFLT, page_fault_handler, PGFLT, 1, 0);
 

@@ -13,6 +13,7 @@ int user_entry()
     :: "i" (0x20 | 0x03)
   );
   cprintf("Welcome to User Land, cheers!\n");
+
   shell();
   for(;;){};
 }

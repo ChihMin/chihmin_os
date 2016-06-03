@@ -25,14 +25,16 @@ all: boot/boot kernel/system
 	dd if=$(OBJDIR)/kernel/system of=$(OBJDIR)/kernel.img seek=1 conv=notrunc 2>/dev/null
 
 clean:
-	rm -rf $(OBJDIR)/boot/*.o $(OBJDIR)/boot/boot.out $(OBJDIR)/boot/boot $(OBJDIR)/boot/boot.asm
-	rm -rf $(OBJDIR)/kernel/*.o $(OBJDIR)/kernel/system* kernel.*
-	rm -rf $(OBJDIR)/lib/*.o
-	rm -rf $(OBJDIR)/user/*.o
-	rm -rf $(OBJDIR)/user/*.asm
+	rm -f $(OBJDIR)/boot/*.o $(OBJDIR)/boot/boot.out $(OBJDIR)/boot/boot $(OBJDIR)/boot/boot.asm
+	rm -f $(OBJDIR)/kernel/*.o $(OBJDIR)/kernel/system* kernel.*
+	rm -f $(OBJDIR)/lib/*.o
+	rm -f $(OBJDIR)/user/*.o
+	rm -f $(OBJDIR)/user/*.asm
+	rm -f $(OBJDIR)/kernel/fs/*.o $(OBJDIR)/kernel/fs/fat/*.o
+	rm -f $(OBJDIR)/kernel/drv/*.o
 
 qemu:
-	qemu-system-i386 -hda kernel.img -monitor stdio
+	qemu-system-i386 -hda kernel.img -hdb lab7.img -monitor stdio
 
 debug:
-	qemu-system-i386 -hda kernel.img -monitor stdio -s -S
+	qemu-system-i386 -hda kernel.img -hdb lab7.img -monitor stdio -s -S

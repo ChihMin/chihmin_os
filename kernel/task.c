@@ -51,7 +51,7 @@ struct Pseudodesc gdt_pd = {
 
 
 
-static struct tss_struct tss;
+static struct Taskstate tss;
 Task tasks[NR_TASKS];
 
 extern char bootstack[];
@@ -151,6 +151,7 @@ int task_create()
 	ts->tf.tf_ss = GD_UD | 0x03;
 	ts->tf.tf_esp = USTACKTOP-PGSIZE;
 
+	
 	/* Setup task structure (task_id and parent_id) */
     ts->task_id = task_id;
     ts->remind_ticks = 100;
@@ -213,30 +214,6 @@ void sys_kill(int pid)
     }
 }
 
-/* TODO: Lab 5
- * In this function, you have several things todo
- *
- * 1. Use task_create() to create an empty task, return -1
- *    if cannot create a new one.
- *
- * 2. Copy the trap frame of the parent to the child
- *
- * 3. Copy the content of the old stack to the new one,
- *    you can use memcpy to do the job. Remember all the
- *    address you use should be virtual address.
- *
- * 4. Setup virtual memory mapping of the user prgram 
- *    in the new task's page table.
- *    According to linker script, you can determine where
- *    is the user program. We've done this part for you,
- *    but you should understand how it works.
- *
- * 5. The very important step is to let child and 
- *    parent be distinguishable!
- *
- * HINT: You should understand how system call return
- * it's return value.
- */
 int sys_fork()
 {
     /* pid for newly created process */
@@ -276,11 +253,6 @@ int sys_fork()
     }
     return -1;  // fork error 
 }
-
-/* TODO: Lab5
- * We've done the initialization for you,
- * please make sure you understand the code.
- */
 void task_init()
 {
     extern int user_entry();
@@ -308,7 +280,7 @@ void task_init()
 	tss.ts_gs = GD_UD | 0x03;
 
 	/* Setup TSS in GDT */
-	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct tss_struct), 0);
+	gdt[GD_TSS0 >> 3] = SEG16(STS_T32A, (uint32_t)(&tss), sizeof(struct Taskstate), 0);
 	gdt[GD_TSS0 >> 3].sd_s = 0;
 
 	/* Setup first task */
