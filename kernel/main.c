@@ -39,7 +39,7 @@ void kernel_main(void)
 	disk_init();
 	disk_test();
 	/*TODO Lab7: uncommend it when you finish 7.2 part */
-	fs_test();
+	// fs_test();
 	fs_init();
 
 	task_init();

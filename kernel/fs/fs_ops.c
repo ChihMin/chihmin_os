@@ -13,10 +13,18 @@ extern struct fs_dev fat_fs;
 int fat_mount(struct fs_dev *fs, unsigned long rwflag, const void* data)
 {
 }
+
 int fat_mkfs(const char* device_name)
 {
+    int res;
+    printk("[MKFS] Device : %s\n", device_name);
+    res = f_mkfs("/", 0, 0);
 
+    if (res != 0)
+        return -1;
+    return 0;
 }
+
 int fat_open(struct fs_fd* file)
 {
     FIL* data = file->data;
