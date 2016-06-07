@@ -74,6 +74,30 @@ int sys_write(int fd, const void *buf, size_t len)
 off_t sys_lseek(int fd, off_t offset, int whence)
 {
 /* TODO */
+    int ret_val;
+    off_t top_offset = 0;
+    struct fs_fd *cur_fd = (struct fs_fd *) KADDR(fd);
+    
+    switch (whence) {
+    case SEEK_END:
+        top_offset = cur_fd->size + offset;
+        break; 
+
+    case SEEK_SET:
+        top_offset = offset;
+        break;
+
+    case SEEK_CUR:
+        top_offset = cur_fd->pos + offset;
+        break;
+    }
+
+    ret_val = cur_fd->fs->ops->lseek(cur_fd, top_offset);
+    if (ret_val != 0)
+        return -1;
+
+    cur_fd->pos = top_offset;
+    return offset;
 }
 
 int sys_unlink(const char *pathname)

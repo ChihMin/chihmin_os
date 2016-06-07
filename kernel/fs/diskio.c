@@ -17,7 +17,7 @@
   */
 DSTATUS disk_initialize (BYTE pdrv)
 {
-    printk("[disk_initialize] %d\n", pdrv);
+    // printk("[disk_initialize] %d\n", pdrv);
      
     /* TODO */
     // disk_init();
@@ -33,7 +33,7 @@ DSTATUS disk_initialize (BYTE pdrv)
   */
 DSTATUS disk_status (BYTE pdrv)
 {
-    printk("[disk_status]\n");
+    // printk("[disk_status]\n");
     /* TODO */
     return 0;
 }
@@ -56,7 +56,7 @@ DRESULT disk_read (BYTE pdrv, BYTE* buff, DWORD sector, UINT count)
     UINT cur_sector = sector;
     
     /* TODO */
-    printk("[DISK_READ]  %d sector %d count %d\n", pdrv, sector, count);
+    //printk("[DISK_READ]  %d sector %d count %d\n", pdrv, sector, count);
     return ide_read_sectors(DISK_ID, i, cur_sector, ptr);  
 }
 
@@ -77,7 +77,7 @@ DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
     BYTE *ptr = buff;
     UINT cur_sector = sector;
     
-    printk("[DISK_WRITE]  %d sector %d count %d\n", pdrv, sector, count);
+    //printk("[DISK_WRITE]  %d sector %d count %d\n", pdrv, sector, count);
     /* TODO */    
     return ide_write_sectors(DISK_ID, i, sector, ptr);  
 }

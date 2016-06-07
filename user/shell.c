@@ -170,7 +170,8 @@ int filetest(int argc, char **argv)
     int ret;
     char *test_str = "This is the last LAB!! Yah!";
     char buf[BUFSIZE] = {0};
-    
+    char test_buf[BUFSIZE] = {0};
+
     if ((fd = open("hello.txt", O_WRONLY | O_CREAT | O_TRUNC, 0)) >= 0)
     {
         cprintf("Open successed!\n");
@@ -195,7 +196,7 @@ int filetest(int argc, char **argv)
             cprintf("Read \"%s\"\n", buf);
         else
             cprintf("Read failed %d!\n", ret);
-            
+        
         close(fd);
     }
     else
