@@ -20,7 +20,7 @@ DSTATUS disk_initialize (BYTE pdrv)
     printk("[disk_initialize] %d\n", pdrv);
      
     /* TODO */
-    disk_init();
+    // disk_init();
     return 0;
 }
 
@@ -77,7 +77,7 @@ DRESULT disk_write (BYTE pdrv, const BYTE* buff, DWORD sector, UINT count)
     BYTE *ptr = buff;
     UINT cur_sector = sector;
     
-    //printk("[DISK_WRITE]  %d sector %d count %d\n", pdrv, sector, count);
+    printk("[DISK_WRITE]  %d sector %d count %d\n", pdrv, sector, count);
     /* TODO */    
     return ide_write_sectors(DISK_ID, i, sector, ptr);  
 }

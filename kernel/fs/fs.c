@@ -25,7 +25,8 @@ struct fs_dev fat_fs = {
 int fs_init()
 {
     int res, i;
-    
+    printk("[ File System Initialization ]\n");
+     
     /* Initial fd_tables */
     for (i = 0; i < FS_FD_MAX; i++)
     {
@@ -49,7 +50,14 @@ int fs_init()
 }
 int fs_mount(const char* device_name, const char* path, unsigned long rwflag, const void* data)
 {
-    return -STATUS_EIO;
+    FRESULT res;
+    res = f_mount(&fat, path, 1);
+    if (res != 0)
+        return -STATUS_EIO;
+    memcpy(fat_fs.path, path, strlen(path));
+    printk("[%s] %s\n", __func__, fat_fs.path);
+    
+    return STATUS_OK;
 } 
 
 int file_read(struct fs_fd* fd, void *buf, size_t len)
@@ -64,7 +72,7 @@ int file_write(struct fs_fd* fd, const void *buf, size_t len)
 
 int file_open(struct fs_fd* fd, const char *path, int flags)
 {
-
+    
 }
 
 int file_close(struct fs_fd* fd)
