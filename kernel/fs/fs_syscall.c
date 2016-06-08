@@ -5,11 +5,13 @@
 #include <inc/syscall.h>
 #include <fs.h>
 #include <kernel/mem.h>
+#include <kernel/task.h>
 
 /*TODO: Lab7, file I/O system call interface.*/
 // Below is POSIX like I/O system call
 extern struct fs_fd fd_table[];
 extern struct fs_dev fat_fs; 
+extern Task * cur_task;
 
 int errno(int error) {
     int ret_val = error;
@@ -89,16 +91,31 @@ int sys_read(int fd, void *buf, size_t len)
 {
     int ret_val;
     struct fs_fd *cur_fd = (struct fs_fd *) KADDR(fd);
-    //check_valid_args(cur_fd, buf, len);
+
+    struct PageInfo* page = page_lookup(cur_task->pgdir, buf, NULL);
+    if (page == NULL)
+        return -STATUS_EINVAL;
+    else if (!check_valid_fd(cur_fd))
+        return -STATUS_EBADF;
 
     ret_val = cur_fd->fs->ops->read(cur_fd, buf, len);
+    printk("[SYS READ] ret = 0x%x\n", ret_val);
     
     return ret_val;
 }
+
+
 int sys_write(int fd, const void *buf, size_t len)
 {
     int ret_val;
     struct fs_fd *cur_fd = (struct fs_fd *) KADDR(fd);
+
+    struct PageInfo* page = page_lookup(cur_task->pgdir, buf, NULL);
+    if (page == NULL)
+        return -STATUS_EINVAL;
+    else if (!check_valid_fd(cur_fd))
+        return -STATUS_EBADF;
+   
     ret_val = cur_fd->fs->ops->write(cur_fd, buf, len);
     
     return ret_val;

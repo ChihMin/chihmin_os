@@ -519,6 +519,28 @@ page_lookup(pde_t *pgdir, void *va, pte_t **pte_store)
     return current_page;
 }
 
+struct PageInfo *
+page_valid(pde_t *pgdir, void *va, pte_t **pte_store)
+{
+    /* TODO */
+    pte_t *current_pgtable;
+    physaddr_t physaddr;
+    struct PageInfo * current_page;
+
+    current_pgtable = pgdir_walk(pgdir, va, 0);
+    if (current_pgtable == NULL) // No page table entry in page directory
+        return NULL;
+    
+    if (~(*current_pgtable) & PTE_P) // No page entry in page table
+        return NULL;
+    
+    if (pte_store != NULL) 
+        *pte_store = current_pgtable;
+     
+    physaddr = PTE_ADDR(*current_pgtable);
+    current_page = pa2page(physaddr);
+    return current_page;
+}
 //
 // Unmaps the physical page at virtual address 'va'.
 // If there is no physical page at that address, silently does nothing.

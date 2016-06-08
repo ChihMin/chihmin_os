@@ -388,7 +388,7 @@ int filetest2(int argc, char **argv)
 {
     int fd[20], i;
  
-    for (i = 0; i < 2; i++)
+    for (i = 0; i < 20; i++)
     {
         fd[i] =  open("hello.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
         if (fd[i] < 0)
@@ -417,6 +417,7 @@ int filetest3(int argc, char **argv)
             larg_buf[i] = i & 0xFF;
         }
         ret = write(fd, larg_buf, LARGE_SIZE);
+        cprintf("LARGE ret = %d\n", ret);
         uassert(ret == LARGE_SIZE);
     }
     else
@@ -462,7 +463,6 @@ int filetest4(int argc, char **argv)
     }
     
     fd = open("test4", O_WRONLY, 0);
-    cprintf("%d vs %d\n", fd, -STATUS_ENOENT);
     uassert(fd == -STATUS_ENOENT);
     
     fd = open("test4", O_WRONLY | O_CREAT | O_TRUNC, 0);
@@ -479,7 +479,7 @@ int filetest4(int argc, char **argv)
     
     fd = open("test4", O_RDWR | O_CREAT | O_TRUNC, 0);
     uassert(fd >= STATUS_OK);
-    
+
     ret = write(fd, 0, -1);
     uassert(ret == -STATUS_EINVAL);
 
@@ -500,7 +500,7 @@ int filetest4(int argc, char **argv)
     
     ret = close(fd);
     uassert(ret == STATUS_OK);
-    
+
     return 0;
 }
 /* Test unlink and append.*/
