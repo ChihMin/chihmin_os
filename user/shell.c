@@ -25,6 +25,7 @@ int filetest4(int argc, char **argv);
 int filetest5(int argc, char **argv);
 int fs_seek_test(int argc, char **argv);
 int fs_speed_test(int argc, char **argv);
+int list_files(int argc, char **argv);
 
 struct Command commands[] = {
   { "help", "Display this list of commands", mon_help },
@@ -41,7 +42,8 @@ struct Command commands[] = {
   { "filetest4", "Test create file", filetest4 },
   { "filetest5", "Test create file", filetest5 },
   { "fs_seek_test", "Test seek file", fs_seek_test },
-  { "fs_speed_test", "Test R/W speed", fs_speed_test}
+  { "fs_speed_test", "Test R/W speed", fs_speed_test},
+  { "ls", "list all files", list_files }
 };
 const int NCOMMANDS = (sizeof(commands)/sizeof(commands[0]));
 
@@ -448,6 +450,7 @@ int filetest3(int argc, char **argv)
         }
     }
     cprintf("Large file test successed!\n");
+    close(fd);
     return 0;
     
 }
@@ -557,6 +560,17 @@ int filetest5(int argc, char **argv)
      
     return 0;
     
+}
+
+int list_files(int argc, char **argv) {
+    if (argc < 2) {
+        cprintf("Please enter correct format : ls $\{PATH\}\n");
+        return 0;
+    }
+    
+    list(argv[1]);
+
+    return 0;
 }
 
 void shell()

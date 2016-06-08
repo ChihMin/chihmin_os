@@ -23,6 +23,7 @@ enum {
     SYS_write,
     SYS_lseek,
     SYS_unlink,
+    SYS_list,
 
   NSYSCALLS,
   SYS_test,

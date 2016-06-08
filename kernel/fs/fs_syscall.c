@@ -166,19 +166,39 @@ off_t sys_lseek(int fd, off_t offset, int whence)
     return offset;
 }
 
+#include <fat/ff.h>
 int sys_unlink(const char *pathname)
 {
     int ret = -1;
     int i;
     ret = f_unlink(pathname);
     
-    for (i = 0; i < FS_FD_MAX; ++i) {
-        struct fs_fd * cur_fd = &fd_table[i];
-        if (!strcmp(cur_fd->path, pathname)) {
-            strcpy(cur_fd->path, "");
-            break;
-        } 
+    if (ret == 0) {
+        for (i = 0; i < FS_FD_MAX; ++i) {
+            struct fs_fd * cur_fd = &fd_table[i];
+            if (!strcmp(cur_fd->path, pathname)) {
+                strcpy(cur_fd->path, "");
+                cur_fd->ref_count = 0;
+                break;
+            } 
+        }
     }
     printk("[UNLINK] ret = %d\n", ret);     
     return errno(-ret);
+}
+
+int sys_list(const char *pathname) {
+    DIR dir;
+    FILINFO fno;
+    int res;
+    printk("ls folder = %s\n", pathname);
+    f_opendir(&dir, pathname);
+    res = f_readdir(&dir, &fno);
+    while (strlen(fno.fname)) {
+        printk("[%s] ret = %d, filename = %s, fsize = %d, date = %d, time = %d\n", __func__, res, fno.fname, fno.fsize, fno.fdate, fno.ftime);
+        res = f_readdir(&dir, &fno);
+    }
+    f_closedir(&dir);
+     
+    return 0;
 }
