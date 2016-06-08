@@ -42,7 +42,9 @@ int fat_open(struct fs_fd* file)
 
     if (ret_val != 0)
         return -ret_val;
-    
+
+    if ((file->flags & O_TRUNC) || (file->flags & O_CREAT))
+        file->size = 0;
     file->pos = 0;
     return ret_val; 
 }
@@ -100,6 +102,9 @@ int fat_lseek(struct fs_fd* file, off_t offset)
 
 int fat_unlink(struct fs_fd* file, const char *pathname)
 {
+    int ret_val = -1;
+    ret_val = f_unlink(pathname);
+    return -ret_val;
 }
 
 struct fs_ops elmfat_ops = {

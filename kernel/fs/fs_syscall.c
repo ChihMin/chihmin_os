@@ -70,6 +70,13 @@ int sys_open(const char *file, int flags, int mode)
     }
     if (ret_val < 0)
         return errno(ret_val);
+    
+    if (cur_fd->flags & O_APPEND) {
+        int tmp = sys_lseek(PADDR(cur_fd), 0, SEEK_END);
+        printk("[APPEND] ret = %d, pos = %d , size = %d\n", tmp, cur_fd->pos, cur_fd->size);
+    } 
+
+    cur_fd->ref_count++;
     return PADDR(cur_fd); // return fs_fd pointer 
 }
 
@@ -82,8 +89,10 @@ int sys_close(int fd)
     }
 
     ret_val = cur_fd->fs->ops->close(cur_fd);
-    if (ret_val == 0)
-        strcpy(cur_fd->path, "");
+    if (ret_val == 0) {
+        if (--cur_fd->ref_count == 0)
+         ;//   strcpy(cur_fd->path, "");
+    }
     printk("[%s] ret = %d\n", __func__, ret_val);
     return ret_val; 
 }
@@ -98,8 +107,15 @@ int sys_read(int fd, void *buf, size_t len)
     else if (!check_valid_fd(cur_fd))
         return -STATUS_EBADF;
 
-    ret_val = cur_fd->fs->ops->read(cur_fd, buf, len);
-    printk("[SYS READ] ret = 0x%x\n", ret_val);
+    printk("[SYS READ] Start pos = %d, size = %d\n", cur_fd->pos, cur_fd->size);
+    int count = 0;
+    if (cur_fd->pos + len > cur_fd->size) 
+        count = cur_fd->size - cur_fd->pos;
+    else
+        count = len;
+        
+    ret_val = cur_fd->fs->ops->read(cur_fd, buf, count);
+    printk("[SYS READ] ret = 0x%x, %s\n", ret_val, buf);
     
     return ret_val;
 }
@@ -115,7 +131,8 @@ int sys_write(int fd, const void *buf, size_t len)
         return -STATUS_EINVAL;
     else if (!check_valid_fd(cur_fd))
         return -STATUS_EBADF;
-   
+    
+    printk("[SYS WRITE] Start pos = %d, size = %d\n", cur_fd->pos, cur_fd->size);
     ret_val = cur_fd->fs->ops->write(cur_fd, buf, len);
     
     return ret_val;
@@ -151,9 +168,17 @@ off_t sys_lseek(int fd, off_t offset, int whence)
 
 int sys_unlink(const char *pathname)
 {
-/* TODO */ 
+    int ret = -1;
+    int i;
+    ret = f_unlink(pathname);
+    
+    for (i = 0; i < FS_FD_MAX; ++i) {
+        struct fs_fd * cur_fd = &fd_table[i];
+        if (!strcmp(cur_fd->path, pathname)) {
+            strcpy(cur_fd->path, "");
+            break;
+        } 
+    }
+    printk("[UNLINK] ret = %d\n", ret);     
+    return errno(-ret);
 }
-
-
-              
-

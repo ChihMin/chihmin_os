@@ -173,15 +173,16 @@ int forktest(int argc, char **argv)
 }
 
 #define BUFSIZE 128
+#define BUFFSIZE 30
 int fs_seek_test(int argc, char **argv)
 {
     int i;
     off_t offset;
     int fd = -1;
     int ret;
-    char buf[BUFSIZE] = {0};
+    char buf[BUFFSIZE] = {0};
     
-    for (i = 0; i < BUFSIZE; i++)
+    for (i = 0; i < BUFFSIZE; i++)
     {
         buf[i] = i;
     }
@@ -200,11 +201,11 @@ int fs_seek_test(int argc, char **argv)
         ret = write(fd, &(buf[10]), 10); 
         offset = lseek(fd, 0, SEEK_SET); //seek to file begin
         
-        for (i = 0; i < BUFSIZE; i++)
+        for (i = 0; i < BUFFSIZE; i++)
         {
             buf[i] = 0;
         }
-        ret = read(fd, buf, BUFSIZE);
+        ret = read(fd, buf, BUFFSIZE);
         
         if (ret >= 0)
         {
@@ -524,10 +525,17 @@ int filetest5(int argc, char **argv)
     uassert(ret == STATUS_OK);
     
     ret = unlink("test5");
+    cprintf("UNLINK ret = %d\n", ret);
     uassert(ret == STATUS_OK);
+   
     
     fd = open("test5", O_RDWR, 0);
     uassert(fd == -STATUS_ENOENT); //file should be removed.
+    
+    // unlink("hello.txt"); 
+    // fd = open("hello.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
+    // write(fd, "Hello world!", 12);
+    // close(fd);
     
     fd = open("hello.txt", O_RDWR | O_APPEND, 0);
     uassert(fd >= STATUS_OK);
@@ -538,11 +546,15 @@ int filetest5(int argc, char **argv)
     ret = lseek(fd, 0, SEEK_SET); //seek to file begin
     uassert(ret == 0);
     
+    for (i = 0; i < BUFSIZE; ++i)
+        buf[i] = 0;
+        
     ret = read(fd, buf, BUFSIZE);
     uassert(ret > STATUS_OK);
     
     cprintf("filetest5 read \"%s\"\n", buf);
-    
+    close(fd);
+     
     return 0;
     
 }
