@@ -46,7 +46,6 @@ int fs_init()
         fat_fs.ops->mkfs("elmfat");
         fs_mount("elmfat", "/", 0, NULL);
     }
-       
 }
 int fs_mount(const char* device_name, const char* path, unsigned long rwflag, const void* data)
 {

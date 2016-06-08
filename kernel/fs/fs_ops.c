@@ -31,11 +31,18 @@ int fat_open(struct fs_fd* file)
     uint32_t flags = 0;
     
     flags |= O_WRONLY & file->flags ?  FA_WRITE : 0;
-    flags |= O_CREAT & file->flags ? FA_CREATE_NEW : 0;
+    flags |= (O_CREAT & file->flags) && (O_TRUNC & file->flags) ? FA_CREATE_ALWAYS : 0;
+    flags |= (O_CREAT & file->flags) && !(O_TRUNC & file->flags) ? FA_CREATE_NEW : 0;
     flags |= file->flags == 0 ? FA_READ : 0;
     flags |= O_RDWR & file->flags ? FA_READ|FA_WRITE : 0; 
-
+    
+    printk("[FAT OPEN] flags = %d\n", flags);
+     
     int ret_val = f_open(data, file->path, flags);
+
+    if (ret_val != 0)
+        return -ret_val;
+    
     file->pos = 0;
     return ret_val; 
 }
@@ -43,7 +50,10 @@ int fat_open(struct fs_fd* file)
 int fat_close(struct fs_fd* file)
 {
    int ret_val;
-   ret_val = f_close(file->data);
+   FIL* data = file->data;
+   ret_val = f_close(data);
+   if (ret_val != 0)
+       ret_val = -ret_val;
    return ret_val; 
 }
 
@@ -54,7 +64,8 @@ int fat_read(struct fs_fd* file, void* buf, size_t count)
     int ret_val = -1;
     ret_val = f_read(data, buf, count, &bw);
     if (ret_val != 0)
-        return -1;
+        return -ret_val;
+    
     file->pos += bw;
     return bw;
 }
@@ -66,7 +77,7 @@ int fat_write(struct fs_fd* file, const void* buf, size_t count)
     int ret_val = -1;
     ret_val = f_write(data, buf, count, &bw);
     if (ret_val != 0)
-        return -1;
+        return -ret_val;
     
     int next_pos = file->pos + bw;
     int size_offset = 0;
@@ -83,8 +94,8 @@ int fat_lseek(struct fs_fd* file, off_t offset)
     FIL* data = file->data;
     int ret_val = -1;
     ret_val = f_lseek(data, offset);
-    
-    return ret_val;
+     
+    return -ret_val;
 }
 
 int fat_unlink(struct fs_fd* file, const char *pathname)

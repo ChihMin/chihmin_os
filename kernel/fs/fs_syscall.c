@@ -10,6 +10,32 @@
 // Below is POSIX like I/O system call
 extern struct fs_fd fd_table[];
 extern struct fs_dev fat_fs; 
+
+int errno(int error) {
+    int ret_val = error;
+    switch (error) {
+    case -4:
+        ret_val = -STATUS_ENOENT;
+        break;
+    
+    case -8:
+        ret_val = -STATUS_EEXIST;
+        break; 
+    }
+    return ret_val;
+}
+
+int check_valid_fd(struct fs_fd *fd) {
+    bool is_valid = false;
+    int i;
+    for (i = 0; i < FS_FD_MAX; ++i)
+        if (fd == &fd_table[i]) {
+            is_valid = true;
+            break;
+        }
+    return is_valid;
+}
+
 int sys_open(const char *file, int flags, int mode)
 {
     //We dont care the mode.
@@ -40,6 +66,8 @@ int sys_open(const char *file, int flags, int mode)
         strcpy(cur_fd->path, file);
         ret_val = cur_fd->fs->ops->open(cur_fd);
     }
+    if (ret_val < 0)
+        return errno(ret_val);
     return PADDR(cur_fd); // return fs_fd pointer 
 }
 
@@ -47,6 +75,10 @@ int sys_close(int fd)
 {
     int ret_val;
     struct fs_fd *cur_fd = (struct fs_fd *) KADDR(fd);
+    if (!check_valid_fd(cur_fd)) {
+        return -STATUS_EINVAL;
+    }
+
     ret_val = cur_fd->fs->ops->close(cur_fd);
     if (ret_val == 0)
         strcpy(cur_fd->path, "");
@@ -55,9 +87,10 @@ int sys_close(int fd)
 }
 int sys_read(int fd, void *buf, size_t len)
 {
-    
     int ret_val;
     struct fs_fd *cur_fd = (struct fs_fd *) KADDR(fd);
+    //check_valid_args(cur_fd, buf, len);
+
     ret_val = cur_fd->fs->ops->read(cur_fd, buf, len);
     
     return ret_val;
@@ -94,8 +127,7 @@ off_t sys_lseek(int fd, off_t offset, int whence)
 
     ret_val = cur_fd->fs->ops->lseek(cur_fd, top_offset);
     if (ret_val != 0)
-        return -1;
-
+        return ret_val;
     cur_fd->pos = top_offset;
     return offset;
 }

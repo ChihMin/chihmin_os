@@ -102,7 +102,12 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
     switch (cmd) {
     case GET_SECTOR_COUNT:
         *retVal = 32 * (1<<20) / 512;
+        break;
+/* 
+    case GET_BLOCK_SIZE:
+        *retVal = 512;
         break; 
+*/
     }
     return 0;
 }
@@ -115,5 +120,5 @@ DRESULT disk_ioctl (BYTE pdrv, BYTE cmd, void* buff)
 DWORD get_fattime (void)
 {
     /* TODO */
-    return 0;
+    return sys_get_ticks();
 }

@@ -19,6 +19,10 @@ int print_pid(int argc, char **argv);
 int fork_single(int argc, char **argv);
 int kill_pid(int argc, char **argv);
 int filetest(int argc, char **argv);
+int filetest2(int argc, char **argv);
+int filetest3(int argc, char **argv);
+int filetest4(int argc, char **argv);
+int filetest5(int argc, char **argv);
 int fs_seek_test(int argc, char **argv);
 int fs_speed_test(int argc, char **argv);
 
@@ -32,6 +36,10 @@ struct Command commands[] = {
   { "fork_single", "Fork only one process", fork_single},
   { "kill_pid", "Kill specific process id", kill_pid},
   { "filetest", "Test create file", filetest },
+  { "filetest2", "Test create file", filetest2 },
+  { "filetest3", "Test create file", filetest3 },
+  { "filetest4", "Test create file", filetest4 },
+  { "filetest5", "Test create file", filetest5 },
   { "fs_seek_test", "Test seek file", fs_seek_test },
   { "fs_speed_test", "Test R/W speed", fs_speed_test}
 };
@@ -163,48 +171,8 @@ int forktest(int argc, char **argv)
   kill_self();
   return 0;
 }
-#define BUFSIZE 30
-int filetest(int argc, char **argv)
-{
-    int fd = -1;
-    int ret;
-    char *test_str = "This is the last LAB!! Yah!";
-    char buf[BUFSIZE] = {0};
-    char test_buf[BUFSIZE] = {0};
 
-    if ((fd = open("hello.txt", O_WRONLY | O_CREAT | O_TRUNC, 0)) >= 0)
-    {
-        cprintf("Open successed!\n");
-        
-        ret = write(fd, test_str, strlen(test_str));
-        if (ret > 0)
-            cprintf("Write %d bytes!\n", ret);
-        else
-            cprintf("Write failed %d!\n", ret);
-            
-        close(fd);
-    }
-    else
-        cprintf("Open failed!\n");
-        
-    if ((fd = open("hello.txt", O_RDONLY, 0)) >= 0)
-    {
-        cprintf("Open successed!\n");
-        
-        ret = read(fd, buf, BUFSIZE);
-        if (ret > 0)
-            cprintf("Read \"%s\"\n", buf);
-        else
-            cprintf("Read failed %d!\n", ret);
-        
-        close(fd);
-    }
-    else
-        cprintf("Open failed!\n");
-            
-    return 0;
-}
-
+#define BUFSIZE 128
 int fs_seek_test(int argc, char **argv)
 {
     int i;
@@ -271,7 +239,6 @@ int fs_speed_test(int argc, char **argv)
 
     while(round < 5)
     {
-
         /* creat file */
         fd = open(fsrw_fn, O_WRONLY | O_CREAT | O_TRUNC, 0);
         if (fd < 0)
@@ -293,7 +260,8 @@ int fs_speed_test(int argc, char **argv)
             length = write(fd, write_data, fsrw_data_len);
             if (length != fsrw_data_len)
             {
-                cprintf("fsrw write data failed\n");
+                cprintf("round %d, index = %d\n", round, index);
+                cprintf("fsrw write data failed %d vs %d\n", length, fsrw_data_len);
                 close(fd);
                 return;
             }
@@ -374,6 +342,209 @@ int fork_context() {
     int pid = fork();
     cprintf("Current task[%d]: fork child ID = %d\n", getpid(), pid);
     return 0;
+}
+
+int filetest(int argc, char **argv)
+{
+    int fd = -1;
+    int ret;
+    char *test_str = "This is the last LAB!! Yah!";
+    char buf[BUFSIZE] = {0};
+    
+    if ((fd = open("hello.txt", O_WRONLY | O_CREAT | O_TRUNC, 0)) >= 0)
+    {
+        cprintf("Open successed!\n");
+        
+        ret = write(fd, test_str, strlen(test_str));
+        if (ret > 0)
+            cprintf("Write %d bytes!\n", ret);
+        else
+            cprintf("Write failed %d!\n", ret);
+            
+        close(fd);
+    }
+    else
+        cprintf("Open failed!\n");
+        
+    if ((fd = open("hello.txt", O_RDONLY, 0)) >= 0)
+    {
+        cprintf("Open successed!\n");
+        
+        ret = read(fd, buf, BUFSIZE);
+        if (ret > 0)
+            cprintf("Read \"%s\"\n", buf);
+        else
+            cprintf("Read failed %d!\n", ret);
+            
+        close(fd);
+    }
+    else
+        cprintf("Open failed!\n");
+            
+    return 0;
+}
+
+int filetest2(int argc, char **argv)
+{
+    int fd[20], i;
+ 
+    for (i = 0; i < 2; i++)
+    {
+        fd[i] =  open("hello.txt", O_WRONLY | O_CREAT | O_TRUNC, 0);
+        if (fd[i] < 0)
+            cprintf("Open error, %d\n", fd[i]);
+        else {
+            cprintf("Open successed, %d\n", i);
+        }
+    }
+
+    return 0;
+}
+
+#define uassert(x)      \
+    do { if (!(x)) {cprintf("assertion failed: %s\n", #x); return 0;}} while (0)
+#define LARGE_SIZE 4000
+int filetest3(int argc, char **argv)
+{
+    int fd, i, ret;
+    char larg_buf[LARGE_SIZE] = {0};
+    
+    fd =  open("large.txt", O_RDWR | O_CREAT | O_TRUNC, 0);
+    if (fd >= 0)
+    {
+        for (i = 0; i < LARGE_SIZE; i++)
+        {
+            larg_buf[i] = i & 0xFF;
+        }
+        ret = write(fd, larg_buf, LARGE_SIZE);
+        uassert(ret == LARGE_SIZE);
+    }
+    else
+    {
+        cprintf("Open error, %d\n", fd);
+        return -1;
+    }
+        
+    ret = lseek(fd, 0, SEEK_SET); //seek to file begin
+    //close(fd);
+    //fd =  open("large.txt", O_RDWR, 0);
+    uassert(ret == 0);
+    for (i = 0; i < LARGE_SIZE; i++)
+    {
+        larg_buf[i] = 0;
+    }
+    ret = read(fd, larg_buf, LARGE_SIZE);
+    uassert(ret == LARGE_SIZE);
+    
+    for (i = 0; i < LARGE_SIZE; i++)
+    {
+        //uassert(larg_buf[i] == i&0xFF);
+        if ((larg_buf[i]&0xFF) != (i& 0xFF))
+        {
+            cprintf("Failed at %d, read %x but want %d\n", i, larg_buf[i], i&0xFF);
+            return -1;
+        }
+    }
+    cprintf("Large file test successed!\n");
+    return 0;
+    
+}
+
+/* Test error code.*/
+int filetest4(int argc, char **argv)
+{
+    int fd, ret, i;
+    char buf[BUFSIZE] = {0};
+    
+    for (i = 0; i < BUFSIZE; i++)
+    {
+        buf[i] = i & 0xFF;
+    }
+    
+    fd = open("test4", O_WRONLY, 0);
+    cprintf("%d vs %d\n", fd, -STATUS_ENOENT);
+    uassert(fd == -STATUS_ENOENT);
+    
+    fd = open("test4", O_WRONLY | O_CREAT | O_TRUNC, 0);
+    uassert(fd >= STATUS_OK);
+    
+    ret = close(100);
+    uassert(ret == -STATUS_EINVAL);
+    
+    ret = close(fd);
+    uassert(ret == STATUS_OK);
+    
+    fd = open("test4", O_WRONLY | O_CREAT, 0);
+    uassert(fd == -STATUS_EEXIST);
+    
+    fd = open("test4", O_RDWR | O_CREAT | O_TRUNC, 0);
+    uassert(fd >= STATUS_OK);
+    
+    ret = write(fd, 0, -1);
+    uassert(ret == -STATUS_EINVAL);
+
+    ret = write(100, buf, BUFSIZE);
+    uassert(ret == -STATUS_EBADF);
+    
+    ret = read(fd, 0, BUFSIZE);
+    uassert(ret == -STATUS_EINVAL);
+    
+    ret = read(100, buf, BUFSIZE);
+    uassert(ret == -STATUS_EBADF);
+    
+    ret = read(fd, buf, BUFSIZE);
+    uassert(ret == 0);
+    
+    ret = write(fd, buf, BUFSIZE);
+    uassert(ret == BUFSIZE);
+    
+    ret = close(fd);
+    uassert(ret == STATUS_OK);
+    
+    return 0;
+}
+/* Test unlink and append.*/
+int filetest5(int argc, char **argv)
+{
+    int fd, ret, i;
+    char buf[BUFSIZE] = {0};
+    
+    for (i = 0; i < BUFSIZE; i++)
+    {
+        buf[i] = ('0'+ i )& 0xFF;
+    }
+    
+    ret = unlink("test5");
+    uassert(ret == -STATUS_ENOENT);
+    
+    fd = open("test5", O_WRONLY | O_CREAT, 0);
+    uassert(fd >= STATUS_OK);
+    
+    ret = close(fd);
+    uassert(ret == STATUS_OK);
+    
+    ret = unlink("test5");
+    uassert(ret == STATUS_OK);
+    
+    fd = open("test5", O_RDWR, 0);
+    uassert(fd == -STATUS_ENOENT); //file should be removed.
+    
+    fd = open("hello.txt", O_RDWR | O_APPEND, 0);
+    uassert(fd >= STATUS_OK);
+    
+    ret = write(fd, buf, 10);
+    uassert(ret == 10);
+    
+    ret = lseek(fd, 0, SEEK_SET); //seek to file begin
+    uassert(ret == 0);
+    
+    ret = read(fd, buf, BUFSIZE);
+    uassert(ret > STATUS_OK);
+    
+    cprintf("filetest5 read \"%s\"\n", buf);
+    
+    return 0;
+    
 }
 
 void shell()
